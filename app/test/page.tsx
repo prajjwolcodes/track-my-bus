@@ -1,22 +1,19 @@
 "use client"
 
-import { getBusLocation } from '@/firebase/rtdb'
-import { useState } from 'react'
+import { listenBusLocation } from '@/firebase/rtdb'
+import { useEffect, useState } from 'react'
 
 const LocationTestPage = () => {
     const [position, setPosition] = useState<Position | null>(null)
-    function getLiveBusLocation() {
-        getBusLocation(1, (data) => {
-            setPosition(data)
-            console.log(data)
-        })
 
-    }
+    useEffect(() => {
+        const unsubscribe = listenBusLocation(1, (data) => {
+            setPosition(data)
+        })
+        return () => unsubscribe()
+    }, [])
     return (
         <div className='flex flex-col gap-4'>LocationTestPage
-
-            <button onClick={getLiveBusLocation}>Get live location</button>
-
             <h1>Display data
                 {position ? (
                     <div>
