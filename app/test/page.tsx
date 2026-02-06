@@ -1,10 +1,22 @@
 "use client"
 
+import { firebaseApp } from '@/firebase/firebase'
+import { generateToken } from '@/firebase/firebase-messaging'
 import { listenBusLocation } from '@/firebase/rtdb'
+import { getMessaging, onMessage } from 'firebase/messaging'
 import { useEffect, useState } from 'react'
 
 const LocationTestPage = () => {
     const [position, setPosition] = useState<Position | null>(null)
+
+
+    useEffect(() => {
+        generateToken()
+        const messaging = getMessaging(firebaseApp)
+        onMessage(messaging, (payload) => {
+            console.log("Message received. ", payload);
+        })
+    }, [])
 
     useEffect(() => {
         const unsubscribe = listenBusLocation(1, (data) => {
