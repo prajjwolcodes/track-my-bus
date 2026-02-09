@@ -1,14 +1,16 @@
 import admin from "firebase-admin";
 
-var serviceAccount = require("../public/firebase-admin-sdk.json");
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+if (!serviceAccountJson) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT is not set");
+}
 
-
-
+const serviceAccount = JSON.parse(serviceAccountJson) as admin.ServiceAccount;
 
 if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: "https://track-my-bus-dde0a-default-rtdb.firebaseio.com"
+        databaseURL: process.env.FIREBASE_DB_URL,
     });
 }
 
