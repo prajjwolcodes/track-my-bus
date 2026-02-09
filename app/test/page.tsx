@@ -14,8 +14,18 @@ const LocationTestPage = () => {
         generateToken()
         const messaging = getMessaging(firebaseApp)
         onMessage(messaging, (payload) => {
-            console.log("Message received. ", payload);
-        })
+            const title =
+                payload.notification?.title || payload.data?.title;
+
+            const body =
+                payload.notification?.body || payload.data?.body;
+
+            new Notification(title!, {
+                body,
+                icon: payload.notification?.icon || payload.data?.icon,
+            });
+        });
+
     }, [])
 
     useEffect(() => {
