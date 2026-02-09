@@ -43,3 +43,18 @@ const LocationTestPage = () => {
 }
 
 export default LocationTestPage
+
+
+// import React from 'react'
+
+// const page = () => {
+//     return (
+//         <form action="https://formsubmit.co/pratibhaa625@gmail.com" method="POST">
+//             <input type="text" name="name" required />
+//             <input type="email" name="email" required />
+//             <button type="submit">Send</button>
+//         </form>
+//     )
+// }
+
+// export default page
