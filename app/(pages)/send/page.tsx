@@ -1,26 +1,6 @@
 "use client"
 
-import { useEffect } from "react";
-import { getMessaging, onMessage } from "firebase/messaging";
-import { firebaseApp } from "@/firebase/firebase";
-
 const page = () => {
-    useEffect(() => {
-        const messaging = getMessaging(firebaseApp);
-        const unsubscribe = onMessage(messaging, (payload) => {
-            const title = payload.notification?.title || payload.data?.title || "Bus Update";
-            const body = payload.notification?.body || payload.data?.body || "New update received";
-
-            if (Notification.permission === "granted") {
-                new Notification(title, {
-                    body,
-                    icon: payload.notification?.icon || payload.data?.icon,
-                });
-            }
-        });
-
-        return () => unsubscribe();
-    }, []);
     async function send() {
         const res = await fetch("/api/sendnotification", {
             method: "POST",
@@ -33,8 +13,7 @@ const page = () => {
         })
         const data = await res.json()
 
-        console.log("Send response:", data)
-
+        console.log(data)
     }
     return (
         <div>

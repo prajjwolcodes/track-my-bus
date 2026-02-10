@@ -1,3 +1,5 @@
+
+
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
 
@@ -11,18 +13,52 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(function (payload) {
-    console.log("[firebase-messaging-sw.js] Background message ", payload);
+messaging.onBackgroundMessage(async (payload) => {
+    const allClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+    });
 
-    // Works whether you send `notification` OR `data`
-    const title =
-        payload.notification?.title || payload.data?.title || "Bus Update";
+    const openTitle = payload.data?.tabOpenTitle || "Bus Update";
+    const openBody = payload.data?.tabOpenBody || "New update received";
+    const closedTitle = payload.data?.tabClosedTitle || "Bus Update";
+    const closedBody = payload.data?.tabClosedBody || "New update received";
+    const icon = payload.notification?.icon || payload.data?.icon;
 
-    const body =
-        payload.notification?.body || payload.data?.body || "New update received";
+    if (allClients.length > 0) {
+        // If any tab is open, send the data to the page and let it show an alert.
+        allClients.forEach((client) => {
+            client.postMessage({
+                type: "FCM_ALERT",
+                data: {
+                    tabOpenTitle: openTitle,
+                    tabOpenBody: openBody,
+                    icon,
+                },
+            });
+        });
+        return;
+    }
 
-    self.registration.showNotification(title, {
-        body,
-        icon: "https://imgs.search.brave.com/JzzQ3hCqNrreZIasRtxZW_E2IAU9mv4nEo_dSawUQlQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90My5m/dGNkbi5uZXQvanBn/LzA2Lzk2LzU1Lzk0/LzM2MF9GXzY5NjU1/OTQ2Ml9vc0VRUXhC/RmJNamRsRWNpRlpJ/bUNFRE15SVJRYUdh/Zy5qcGc",
+    // No tab open: show a real notification.
+    await self.registration.showNotification(closedTitle, {
+        body: closedBody,
+        icon,
     });
 });
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+
+    event.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+            for (const client of clientsArr) {
+                if ("focus" in client) {
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow("/");
+        })
+    );
+});
+

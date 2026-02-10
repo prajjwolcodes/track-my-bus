@@ -9,10 +9,37 @@ import { useEffect, useState } from 'react'
 const LocationTestPage = () => {
     const [position, setPosition] = useState<Position | null>(null)
 
+    // useEffect(() => {
+    //     const messaging = getMessaging(firebaseApp);
+    //     const unsubscribe = onMessage(messaging, (payload) => {
+    //         if (Notification.permission === "granted" && payload.data) {
+    //             new Notification(payload.data.tabOpenTitle, {
+    //                 body: payload.data.tabOpenBody,
+    //                 icon: payload.data.icon,
+    //             });
+    //         }
+    //     })
 
-    useEffect(() => {
-        generateToken()
-    }, [])
+    //     return () => unsubscribe();
+    // }, []);
+
+    // useEffect(() => {
+    //     generateToken()
+    //     const messaging = getMessaging(firebaseApp)
+    //     onMessage(messaging, (payload) => {
+    //         const title =
+    //             payload.notification?.title || payload.data?.title;
+
+    //         const body =
+    //             payload.notification?.body || payload.data?.body;
+
+    //         new Notification(title!, {
+    //             body,
+    //             icon: payload.notification?.icon || payload.data?.icon,
+    //         });
+    //     });
+
+    // }, [])
 
     useEffect(() => {
         const unsubscribe = listenBusLocation(1, (data) => {
