@@ -1,8 +1,7 @@
+
+
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
-
-self.addEventListener("push", function () { });
-self.addEventListener("notificationclick", function () { });
 
 firebase.initializeApp({
     apiKey: "AIzaSyCFNApzNuLobTFWjQ1gR-fD4BG_hVL12HY",
@@ -14,13 +13,52 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(function (payload) {
-    console.log("[firebase-messaging-sw.js] Background message ", payload);
-    console.log("Payload notification body:", payload);
+messaging.onBackgroundMessage(async (payload) => {
+    const allClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+    });
 
-    self.registration.showNotification(
-        payload.notification.title, {
-        body: payload.notification.body,
-        icon: payload.notification.image,
+    const openTitle = payload.data?.tabOpenTitle || "Bus Update";
+    const openBody = payload.data?.tabOpenBody || "New update received";
+    const closedTitle = payload.data?.tabClosedTitle || "Bus Update";
+    const closedBody = payload.data?.tabClosedBody || "New update received";
+    const icon = payload.notification?.icon || payload.data?.icon;
+
+    if (allClients.length > 0) {
+        // If any tab is open, send the data to the page and let it show an alert.
+        allClients.forEach((client) => {
+            client.postMessage({
+                type: "FCM_ALERT",
+                data: {
+                    tabOpenTitle: openTitle,
+                    tabOpenBody: openBody,
+                    icon,
+                },
+            });
+        });
+        return;
+    }
+
+    // No tab open: show a real notification.
+    await self.registration.showNotification(closedTitle, {
+        body: closedBody,
+        icon,
     });
 });
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+
+    event.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+            for (const client of clientsArr) {
+                if ("focus" in client) {
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow("/");
+        })
+    );
+});
+
