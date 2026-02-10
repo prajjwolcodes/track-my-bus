@@ -34,7 +34,7 @@ yarn-error.log*
 .env*
 
 # firebase secrets
-/public/firebase-admin-sdk.json
+/lib/track-my-bus-admin-sdk.json
 
 # vercel
 .vercel
