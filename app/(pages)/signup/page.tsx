@@ -6,7 +6,6 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
 
-
 const Signup: React.FC = () => {
     const router = useRouter();
 
@@ -29,16 +28,27 @@ const Signup: React.FC = () => {
             );
 
             const user = userCredential.user;
-
+            const uid = user.uid;
             const schoolId = "SCH" + user.uid.slice(-6).toUpperCase();
 
-            await setDoc(doc(db, "schools", user.uid), {
+            // 1 Add to 'schools' collection 
+            await setDoc(doc(db, "schools", uid), {
                 schoolId,
                 name,
                 address,
                 email,
                 contact,
                 role: "school",
+                createdAt: serverTimestamp(),
+            });
+
+            // 2️ Add to 'users' collection 
+            await setDoc(doc(db, "users", uid), {
+                role: "school",
+                schoolId,
+                name,
+                email,
+                contact,
                 createdAt: serverTimestamp(),
             });
 
