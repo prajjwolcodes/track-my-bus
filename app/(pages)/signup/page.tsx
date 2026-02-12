@@ -8,9 +8,8 @@ import { useRouter } from "next/navigation";
 
 
 const Signup: React.FC = () => {
-
-    // Redirect to sign-in page after successful registration   
     const router = useRouter();
+
     const [name, setName] = useState<string>("");
     const [address, setAddress] = useState<string>("");
     const [email, setEmail] = useState<string>("");
@@ -22,7 +21,6 @@ const Signup: React.FC = () => {
             alert("Please fill all fields");
             return;
         }
-
         try {
             const userCredential = await createUserWithEmailAndPassword(
                 auth,
@@ -40,6 +38,7 @@ const Signup: React.FC = () => {
                 address,
                 email,
                 contact,
+                role: "school",
                 createdAt: serverTimestamp(),
             });
 
