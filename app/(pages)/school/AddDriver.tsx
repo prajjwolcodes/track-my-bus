@@ -56,13 +56,13 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
             console.error('Error adding driver:', err)
             alert('Failed to add driver: ' + (err as Error).message)
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     }
 
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-xl w-[400px] shadow-lg">
+            <div className="bg-white p-6 rounded-xl w-400px shadow-lg">
                 <h2 className="text-xl font-semibold mb-4">Add Driver</h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
