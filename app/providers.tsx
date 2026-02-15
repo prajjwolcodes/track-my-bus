@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { useEffect } from "react";
 import { getMessaging, onMessage } from "firebase/messaging";
 import { firebaseApp } from "@/firebase/firebase";
+import { AuthProvider } from "./context/authContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
 
@@ -36,9 +37,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem >
-            {children}
-            <Toaster />
-        </ThemeProvider>
+        <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem >
+
+                {children}
+                <Toaster />
+            </ThemeProvider>
+        </AuthProvider>
     )
 }

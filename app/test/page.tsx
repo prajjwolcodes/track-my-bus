@@ -23,23 +23,23 @@ const LocationTestPage = () => {
     //     return () => unsubscribe();
     // }, []);
 
-    // useEffect(() => {
-    //     generateToken()
-    //     const messaging = getMessaging(firebaseApp)
-    //     onMessage(messaging, (payload) => {
-    //         const title =
-    //             payload.notification?.title || payload.data?.title;
+    useEffect(() => {
+        generateToken()
+        // const messaging = getMessaging(firebaseApp)
+        // onMessage(messaging, (payload) => {
+        //     const title =
+        //         payload.notification?.title || payload.data?.title;
 
-    //         const body =
-    //             payload.notification?.body || payload.data?.body;
+        //     const body =
+        //         payload.notification?.body || payload.data?.body;
 
-    //         new Notification(title!, {
-    //             body,
-    //             icon: payload.notification?.icon || payload.data?.icon,
-    //         });
-    //     });
+        //     new Notification(title!, {
+        //         body,
+        //         icon: payload.notification?.icon || payload.data?.icon,
+        //     });
+        // });
 
-    // }, [])
+    }, [])
 
     useEffect(() => {
         const unsubscribe = listenBusLocation(1, (data) => {
@@ -47,6 +47,7 @@ const LocationTestPage = () => {
         })
         return () => unsubscribe()
     }, [])
+
     return (
         <div className='flex flex-col gap-4'>LocationTestPage
             <h1>Display data
