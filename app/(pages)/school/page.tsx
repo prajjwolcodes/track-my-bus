@@ -6,10 +6,12 @@ import { auth } from '@/firebase/firebase'
 import { signOut } from 'firebase/auth'
 import AddDriver from './AddDriver'
 import AddBus from './AddBus'
+import BusAssignment from './BusAssignment'
 
 const School = () => {
     const [openDriverModal, setOpenDriverModal] = useState(false)
     const [openBusModal, setOpenBusModal] = useState(false)
+    const [openAssignModal, setOpenAssignModal] = useState(false)
     const router = useRouter()
 
     const handleSignOut = async () => {
@@ -21,7 +23,7 @@ const School = () => {
         }
     }
 
-    const isBlur = openDriverModal || openBusModal
+    const isBlur = openDriverModal || openBusModal || openAssignModal
 
     return (
         <div className="relative">
@@ -42,6 +44,13 @@ const School = () => {
                 </button>
 
                 <button
+                    onClick={() => setOpenAssignModal(true)}
+                    className="px-4 py-2 m-4 bg-indigo-900 text-white rounded"
+                >
+                    Assignment to Bus
+                </button>
+
+                <button
                     onClick={() => router.push("/test")}
                     className="px-4 py-2 m-4 bg-blue-900 text-white rounded"
                 >
@@ -57,7 +66,7 @@ const School = () => {
             </div>
             {openDriverModal && <AddDriver onClose={() => setOpenDriverModal(false)} />}
             {openBusModal && <AddBus onClose={() => setOpenBusModal(false)} />}
-
+            {openAssignModal && (<BusAssignment onClose={() => setOpenAssignModal(false)} />)}
         </div >
     )
 }

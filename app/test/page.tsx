@@ -97,7 +97,8 @@ import { db } from '@/firebase/firebase'
 // For testing  bus and driver data fetching for logged-in school
 
 interface Driver {
-    id: string;
+    driverId: string;
+    busId: string;
     name: string;
     phone: string;
     schoolId: string;
@@ -109,8 +110,8 @@ interface Driver {
 }
 
 interface Bus {
-    id: string;
     busId: string;
+    driverId: string;
     busNo: string;
     plateNo: string;
     route: string;
@@ -217,21 +218,17 @@ const TestDriversAndBusesPage = () => {
                     <p>No drivers found.</p>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {drivers.map((driver) => (
-                            <div key={driver.id} className="p-4 border rounded shadow">
+                        {drivers.map(driver => (
+                            <div key={driver.driverId} className="p-4 border rounded shadow">
                                 <p><strong>Name:</strong> {driver.name}</p>
-                                <p><strong>Phone:</strong> {driver.phone}</p>
+                                <p><strong>Phone:</strong> {driver.phone || "N/A"}</p>
                                 <p>
                                     <strong>Bus:</strong>{" "}
-                                    {typeof driver.bus === "object"
-                                        ? driver.bus.busNo
-                                        : driver.bus || "No bus assigned"}
+                                    {driver.busId ? buses.find(b => b.busId === driver.busId)?.busNo || "N/A" : "No bus assigned"}
                                 </p>
                                 <p>
                                     <strong>Route:</strong>{" "}
-                                    {typeof driver.bus === "object" && driver.bus.route
-                                        ? driver.bus.route
-                                        : "N/A"}
+                                    {driver.busId ? buses.find(b => b.busId === driver.busId)?.route || "N/A" : "N/A"}
                                 </p>
                             </div>
                         ))}
@@ -246,10 +243,11 @@ const TestDriversAndBusesPage = () => {
                     <p>No buses found.</p>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {buses.map((bus) => (
-                            <div key={bus.id} className="p-4 border rounded shadow">
-                                <p><strong>Bus No:</strong> {bus.busNo}</p>
+                        {buses.map(bus => (
+                            <div key={bus.busId} className="p-4 border rounded shadow">
+                                <p><strong>Bus:</strong> {bus.busNo}</p>
                                 <p><strong>Plate No:</strong> {bus.plateNo || "N/A"}</p>
+                                <p><strong>Driver:</strong> {bus.driverId ? drivers.find(d => d.driverId === bus.driverId)?.name || "N/A" : "No driver assigned"}</p>
                                 <p><strong>Route:</strong> {bus.route || "N/A"}</p>
                             </div>
                         ))}
