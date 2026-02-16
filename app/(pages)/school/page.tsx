@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useAuth } from "@/app/context/authContext";
 import AddDriver from "./AddDriver";
 import AddBus from "./AddBus";
 import BusAssignment from "./BusAssignment";
@@ -30,43 +31,20 @@ const School = () => {
   const [openBusModal, setOpenBusModal] = useState(false);
   const [openAssignModal, setOpenAssignModal] = useState(false);
 
+  const { user, loading: schoolLoading } = useAuth();
+  const schoolId = user?.schoolId ?? null;
+  const schoolName = user?.name ?? "My School";
+
   // Data states
-  const [schoolName, setSchoolName] = useState("My School");
-  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
 
   // Loading states
-  const [schoolLoading, setSchoolLoading] = useState(true);
   const [driversLoading, setDriversLoading] = useState(true);
   const [busesLoading, setBusesLoading] = useState(true);
 
   const isBlur = openDriverModal || openBusModal || openAssignModal;
   const loading = schoolLoading || driversLoading || busesLoading;
-
-  // Get school info
-  useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        setSchoolLoading(false);
-        return;
-      }
-
-      const q = query(collection(db, "users"), where("uid", "==", user.uid));
-      const unsubscribeUser = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const data = snapshot.docs[0].data();
-          setSchoolId(data.schoolId);
-          setSchoolName(data.schoolName || "My School");
-        }
-        setSchoolLoading(false);
-      });
-
-      return () => unsubscribeUser();
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
 
   // Fetch drivers
   useEffect(() => {

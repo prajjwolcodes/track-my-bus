@@ -7,11 +7,10 @@ import {
     where,
     onSnapshot,
     doc,
-    runTransaction,
-    getDoc
+    runTransaction
 } from "firebase/firestore"
-import { db, auth } from "@/firebase/firebase"
-import { onAuthStateChanged } from "firebase/auth"
+import { db } from "@/firebase/firebase"
+import { useAuth } from "@/app/context/authContext"
 
 interface Props {
     onClose: () => void
@@ -35,7 +34,8 @@ interface Driver {
 }
 
 const BusAssignment = ({ onClose }: Props) => {
-    const [schoolId, setSchoolId] = useState<string | null>(null)
+    const { user, loading: dataLoading } = useAuth()
+    const schoolId = user?.schoolId ?? null
     const [buses, setBuses] = useState<Bus[]>([])
     const [drivers, setDrivers] = useState<Driver[]>([])
     const [selectedBus, setSelectedBus] = useState("")
@@ -43,29 +43,8 @@ const BusAssignment = ({ onClose }: Props) => {
     const [routeNo, setRouteNo] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
-    const [dataLoading, setDataLoading] = useState(true)
 
-    // 1️⃣ Get logged-in user's schoolId directly from Firestore
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (!user) return
-            try {
-                const userRef = doc(db, "users", user.uid)
-                const userSnap = await getDoc(userRef)
-                if (userSnap.exists()) {
-                    setSchoolId(userSnap.data().schoolId)
-                }
-            } catch (err) {
-                console.error("Error fetching schoolId:", err)
-            } finally {
-                setDataLoading(false)
-            }
-        })
-
-        return () => unsubscribe()
-    }, [])
-
-    // 2️⃣ Fetch buses
+    // Fetch buses
     useEffect(() => {
         if (!schoolId) return
 

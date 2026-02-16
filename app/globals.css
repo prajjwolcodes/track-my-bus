@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -120,4 +121,9 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
 }

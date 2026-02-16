@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
-import { auth, db } from '@/firebase/firebase'
+import React, { useState } from 'react'
+import { doc, setDoc, Timestamp } from 'firebase/firestore'
+import { db } from '@/firebase/firebase'
+import { useAuth } from '@/app/context/authContext'
 
 interface BusForm {
     busNo: string
@@ -15,20 +16,10 @@ interface Props {
 }
 
 const AddBus: React.FC<Props> = ({ onClose }) => {
+    const { user } = useAuth()
+    const schoolId = user?.schoolId ?? null
     const [buses, setBuses] = useState<BusForm[]>([{ busNo: '', plateNo: '' }])
-    const [schoolId, setSchoolId] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
-
-    // Fetch schoolId automatically from logged-in user
-    useEffect(() => {
-        const fetchSchoolId = async () => {
-            const user = auth.currentUser
-            if (!user) return
-            const snap = await getDoc(doc(db, 'users', user.uid))
-            if (snap.exists()) setSchoolId(snap.data().schoolId)
-        }
-        fetchSchoolId()
-    }, [])
 
     // Add new bus row
     const addNewBus = () => setBuses([...buses, { busNo: '', plateNo: '' }])

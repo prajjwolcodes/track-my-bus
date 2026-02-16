@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
-import { auth, db } from '@/firebase/firebase'
+import React, { useState } from 'react'
+import { doc, setDoc, Timestamp } from 'firebase/firestore'
+import { db } from '@/firebase/firebase'
+import { useAuth } from '@/app/context/authContext'
+import { uploadSignedImage } from '@/utils/uploadSigned'
 
 interface DriverForm {
   name: string
@@ -16,20 +18,10 @@ interface Props {
 }
 
 const AddDriver: React.FC<Props> = ({ onClose }) => {
+  const { user } = useAuth()
+  const schoolId = user?.schoolId ?? null
   const [drivers, setDrivers] = useState<DriverForm[]>([{ name: '', phone: '', photo: null }])
-  const [schoolId, setSchoolId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
-  // Fetch logged-in user's schoolId
-  useEffect(() => {
-    const fetchSchoolId = async () => {
-      const user = auth.currentUser
-      if (!user) return
-      const snap = await getDoc(doc(db, 'users', user.uid))
-      if (snap.exists()) setSchoolId(snap.data().schoolId)
-    }
-    fetchSchoolId()
-  }, [])
 
   // Add/remove driver row
   const addNewDriver = () => setDrivers([...drivers, { name: '', phone: '', photo: null }])
@@ -79,7 +71,7 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
           driverId: driverId,
           name: d.name,
           phone: d.phone,
-          photo: null,
+          photo: d.photo ? await uploadSignedImage(d.photo) : null,
           busId: null,
           routeNo: null,
           schoolId,
