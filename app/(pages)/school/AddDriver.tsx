@@ -53,6 +53,7 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
     if (!schoolId) return alert('School ID not loaded yet')
     setLoading(true)
 
+    // Validate inputs
     let hasError = false
     const validated = drivers.map(d => {
       if (!d.name.trim() || !d.phone.trim()) {
@@ -65,20 +66,29 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
     if (hasError) return setLoading(false)
 
     try {
-      for (const d of validated) {
+      // Upload all drivers in parallel
+      const uploadPromises = validated.map(async (d) => {
         const driverId = generateId('DR', schoolId!)
-        await setDoc(doc(db, 'drivers', driverId), {
-          driverId: driverId,
+        const photoUrl = d.photo ? await uploadSignedImage(d.photo) : null
+
+        return setDoc(doc(db, 'drivers', driverId), {
+          driverId,
           name: d.name,
           phone: d.phone,
-          photo: d.photo ? await uploadSignedImage(d.photo) : null,
+          photo: photoUrl,
           busId: null,
           routeNo: null,
           schoolId,
           createdAt: Timestamp.now()
         })
-      }
+      })
+
+      // Wait for all uploads and Firestore writes
+      await Promise.all(uploadPromises)
+
+      // Close form
       onClose()
+      alert('Drivers added successfully!')
     } catch (err) {
       console.error(err)
       alert('Failed to save drivers.')
