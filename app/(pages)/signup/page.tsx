@@ -5,6 +5,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Signup: React.FC = () => {
     const router = useRouter();
@@ -69,65 +73,83 @@ const Signup: React.FC = () => {
     };
 
     return (
-        <div className="signup-page">
-            <h2>Sign Up</h2>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted/40 to-muted px-4">
+            <Card className="w-full max-w-md shadow-xl border-0">
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">
+                        Sign Up
+                    </CardTitle>
+                </CardHeader>
 
-            <label htmlFor="name">School's Name:</label>
-            <input
-                id="name"
-                type="text"
-                placeholder="Name"
-                value={name}
-                required
-                onChange={(e) => setName(e.target.value)}
-            />
-            <br />
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">School's Name</Label>
+                        <Input
+                            id="name"
+                            type="text"
+                            placeholder="Name"
+                            value={name}
+                            required
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                    </div>
 
-            <label htmlFor="address">Address:</label>
-            <input
-                id="address"
-                type="text"
-                placeholder="Address"
-                value={address}
-                required
-                onChange={(e) => setAddress(e.target.value)}
-            />
-            <br />
+                    <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                            id="address"
+                            type="text"
+                            placeholder="Address"
+                            value={address}
+                            required
+                            onChange={(e) => setAddress(e.target.value)}
+                        />
+                    </div>
 
-            <label htmlFor="email">Email:</label>
-            <input
-                id="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                required
-                onChange={(e) => setEmail(e.target.value)}
-            />
-            <br />
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            required
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
 
-            <label htmlFor="contact">Contact:</label>
-            <input
-                id="contact"
-                type="text"
-                placeholder="Contact Number"
-                value={contact}
-                required
-                onChange={(e) => setContact(e.target.value)}
-            />
-            <br />
+                    <div className="space-y-2">
+                        <Label htmlFor="contact">Contact</Label>
+                        <Input
+                            id="contact"
+                            type="text"
+                            placeholder="Contact Number"
+                            value={contact}
+                            required
+                            onChange={(e) => setContact(e.target.value)}
+                        />
+                    </div>
 
-            <label htmlFor="password">Password:</label>
-            <input
-                id="password"
-                type="password"
-                placeholder="Password"
-                value={password}
-                required
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            <br /><br />
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            required
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
 
-            <button onClick={handleRegister}>Register School</button>
+                    <Button
+                        onClick={handleRegister}
+                        className="w-full mt-2"
+                    >
+                        Register School
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
     );
 };
