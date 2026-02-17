@@ -20,7 +20,6 @@ const LocationPicker = dynamic(() => import('./LocationPicker'), { ssr: false })
 
 const AddStudentPage: React.FC = () => {
     const { user } = useAuth()
-    const schoolId = user?.schoolId ?? null
 
     const [name, setName] = useState('')
     const [grade, setGrade] = useState('')
@@ -63,6 +62,7 @@ const AddStudentPage: React.FC = () => {
                 id: doc.id,
                 ...doc.data()
             }))
+
             setBuses(busList)
         }
         fetchBuses()
@@ -97,8 +97,9 @@ const AddStudentPage: React.FC = () => {
             const studentRef = doc(collection(db, "students"), studentId)
 
             const studentData = {
+                schoolId: user.schoolId,
                 studentId: studentId,
-                busId: selectedBus.id, 
+                busId: selectedBus.id,
                 name,
                 grade: Number(grade),
                 parentName,
