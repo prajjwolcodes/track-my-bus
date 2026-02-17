@@ -69,7 +69,7 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
       // Upload all drivers in parallel
       const uploadPromises = validated.map(async (d) => {
         const driverId = generateId('DR', schoolId!)
-        const photoUrl = d.photo ? await uploadSignedImage(d.photo) : null
+        const photoUrl = d.photo ? await uploadSignedImage(d.photo, 'drivers') : null
 
         return setDoc(doc(db, 'drivers', driverId), {
           driverId,

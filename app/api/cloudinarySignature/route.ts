@@ -7,14 +7,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export async function POST() {
+export async function POST(request: Request) { 
   try {
+    const body = await request.json();
+    const { folder } = body; 
+
     const timestamp = Math.round(new Date().getTime() / 1000);
 
     const signature = cloudinary.utils.api_sign_request(
       {
         timestamp,
-        folder: "bus-tracker",
+        folder
       },
       process.env.CLOUDINARY_API_SECRET!
     );
@@ -26,6 +29,7 @@ export async function POST() {
       apiKey: process.env.CLOUDINARY_API_KEY,
     });
   } catch (error) {
+    console.error("Signature Error:", error);
     return NextResponse.json({ error: "Signature failed" }, { status: 500 });
   }
 }
