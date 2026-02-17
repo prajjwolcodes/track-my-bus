@@ -10,6 +10,9 @@ interface AuthUser {
     uid: string;
     role: string;
     schoolId: string;
+    name?: string;
+    schoolName?: string;
+    email?: string | null;
     busId?: string;
     studentId?: string;
 }
@@ -35,6 +38,7 @@ export const AuthProvider = ({ children }: any) => {
             if (snap.exists()) {
                 setUser({
                     uid: firebaseUser.uid,
+                    email: firebaseUser.email ?? null,
                     ...snap.data(),
                 } as AuthUser);
             }

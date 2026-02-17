@@ -1,4 +1,3 @@
-
 export const hashMPIN = async (value: string) => {
     const data = new TextEncoder().encode(value)
     const digest = await crypto.subtle.digest("SHA-256", data)
