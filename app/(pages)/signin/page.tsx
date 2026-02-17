@@ -9,7 +9,7 @@ import { auth, db } from "@/firebase/firebase"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { set, z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +34,7 @@ const schoolSchema = z.object({
 })
 
 const phoneSchema = z.object({
-    role: z.enum(["driver", "student"]),
+    role: z.enum(["driver", "parent"]),
     phone: z
         .string()
         .min(10, "Phone must be at least 10 digits")
@@ -58,6 +58,7 @@ export default function AuthForm() {
     const [phone, setPhone] = useState("")
     const [schools, setSchools] = useState<any[]>([])
     const [driver, setDriver] = useState<any>(null)
+    const [parent, setParent] = useState<any>(null)
     const [selectedSchoolId, setSelectedSchoolId] = useState("")
 
     const [confirmationResult, setConfirmationResult] = useState<any>(null)
@@ -107,8 +108,8 @@ export default function AuthForm() {
     }
 
     const saveMPIN = async () => {
-        if (!driver?.id) {
-            alert("Driver not found")
+        if (!driver?.id && !parent?.id) {
+            alert("User not found")
             return
         }
 
@@ -119,17 +120,26 @@ export default function AuthForm() {
 
         setLoading(true)
         try {
-            const driverRef = doc(db, "drivers", driver.id)
             const mpinHash = await hashMPIN(mpin)
 
-            await updateDoc(driverRef, {
-                mpin: mpinHash,
-            })
-
-            alert("MPIN set successfully")
-            router.push("/driver")
+            if (driver?.id) {
+                const driverRef = doc(db, "drivers", driver.id)
+                await updateDoc(driverRef, {
+                    mpin: mpinHash,
+                })
+                alert("MPIN set successfully")
+                router.push("/driver")
+            } else if (parent?.id) {
+                const parentRef = doc(db, "students", parent.id)
+                await updateDoc(parentRef, {
+                    mpin: mpinHash,
+                })
+                alert("MPIN set successfully")
+                router.push("/parent")
+            }
         } catch (error) {
             console.log(error)
+            alert("Failed to save MPIN")
         } finally {
             setLoading(false)
         }
@@ -185,7 +195,7 @@ export default function AuthForm() {
             }
 
             // DRIVER/STUDENT LOGIN
-            if (data.role === "driver" || data.role === "student") {
+            if (data.role === "driver" || data.role === "parent") {
                 if (!selectedSchoolId) {
                     alert("Please select school")
                     return
@@ -193,20 +203,25 @@ export default function AuthForm() {
                 setPhone(data.phone)
 
                 if (!schools || schools.length === 0) return
-                const q = query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone));
+                const q = data.role === "driver" ?
+                    query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone))
+                    :
+                    query(collection(db, "students"), where("schoolId", "==", selectedSchoolId), where("parentPhone", "==", data.phone))
                 const querySnapshot = await getDocs(q);
-                const driverDocs: any[] = [];
+                const queryDocs: any[] = [];
                 querySnapshot.forEach((doc) => {
-                    driverDocs.push({
+                    queryDocs.push({
                         id: doc.id,
                         ...doc.data()
                     })
                 });
 
-                setDriver(driverDocs[0])
+                data.role === "driver" ? setDriver(queryDocs[0]) : setParent(queryDocs[0])
+
+
 
                 if (querySnapshot.empty) {
-                    alert("No driver found with this phone number in the selected school")
+                    alert(`No ${data.role} found with this phone number in the selected school`)
                     return
                 }
                 if (!querySnapshot.docs[0].data().mpin) {
@@ -241,11 +256,6 @@ export default function AuthForm() {
 
     // MPIN LOGIN FUNCTION
     const handleMPINLogin = async (mpin: string) => {
-        if (!driver?.id) {
-            alert("Driver not found")
-            return
-        }
-
         if (!mpin || mpin.length < 4) {
             alert("Please enter a valid MPIN")
             return
@@ -254,12 +264,7 @@ export default function AuthForm() {
         setLoading(true)
         try {
 
-            if (!driver.id) {
-                alert("User data not found in database")
-                return
-            }
-
-            const storedHash = driver?.mpin
+            const storedHash = driver?.mpin || parent?.mpin
             if (!storedHash) {
                 alert("MPIN not set. Please verify OTP first.")
                 return
@@ -271,7 +276,7 @@ export default function AuthForm() {
                 return
             }
 
-            router.push("/driver")
+            router.push(driver ? "/driver" : "/parent")
         } catch (error) {
             console.log(error)
             alert("Login failed")
@@ -310,7 +315,7 @@ export default function AuthForm() {
                                     <SelectContent>
                                         <SelectItem value="school">School</SelectItem>
                                         <SelectItem value="driver">Driver</SelectItem>
-                                        <SelectItem value="student">Student</SelectItem>
+                                        <SelectItem value="parent">Parent</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -361,7 +366,7 @@ export default function AuthForm() {
                             )}
 
                             {/* Phone */}
-                            {(role === "driver" || role === "student") && (
+                            {(role === "driver" || role === "parent") && (
                                 <div className="space-y-2">
                                     <Label>Phone</Label>
                                     <Input {...register("phone")} />
