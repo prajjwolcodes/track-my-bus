@@ -3,7 +3,7 @@ import imageCompression from "browser-image-compression";
 export const uploadSignedImage = async (file: File) => {
     // Compress image
     const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,       // target max size 1MB
+        maxSizeMB: 1,
         maxWidthOrHeight: 1024,
         useWebWorker: true
     });
@@ -13,12 +13,11 @@ export const uploadSignedImage = async (file: File) => {
         method: "POST",
     });
 
-    const { timestamp, signature, cloudName, apiKey } =
-        await signRes.json();
+    const { timestamp, signature, cloudName, apiKey } = await signRes.json();
 
     // Prepare form data
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressedFile);
     formData.append("api_key", apiKey);
     formData.append("timestamp", timestamp);
     formData.append("signature", signature);
@@ -35,4 +34,7 @@ export const uploadSignedImage = async (file: File) => {
 
     const data = await uploadRes.json();
     return data.secure_url;
+
+
 };
+
