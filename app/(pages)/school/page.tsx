@@ -9,6 +9,7 @@ import { useAuth } from "@/app/context/authContext";
 import AddDriver from "./AddDriver";
 import AddBus from "./AddBus";
 import BusAssignment from "./BusAssignment";
+import  Link  from "next/link";
 
 interface Bus {
   busId: string;
@@ -117,6 +118,13 @@ const School = () => {
         >
           Add Bus
         </button>
+
+        <Link
+          href="/student"
+          className="p-6 bg-cyan-950 text-white rounded-xl shadow hover:scale-105 transition"
+        >
+          Add Student
+        </Link>
 
         <button
           onClick={() => setOpenAssignModal(true)}
