@@ -9,7 +9,7 @@ import { useAuth } from "@/app/context/authContext";
 import AddDriver from "./AddDriver";
 import AddBus from "./AddBus";
 import BusAssignment from "./BusAssignment";
-import  Link  from "next/link";
+import Link from "next/link";
 
 interface Bus {
   busId: string;
@@ -26,37 +26,48 @@ interface Driver {
 
 const School = () => {
   const router = useRouter();
+  const { user, loading: schoolLoading } = useAuth();
 
-  // Modal states
+  /* -------------------- MODAL STATES -------------------- */
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [openBusModal, setOpenBusModal] = useState(false);
   const [openAssignModal, setOpenAssignModal] = useState(false);
 
-  const { user, loading: schoolLoading } = useAuth();
-  const schoolId = user?.schoolId ?? null;
-  const schoolName = user?.name ?? "My School";
-
-  // Data states
+  /* -------------------- DATA STATES -------------------- */
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
 
-  // Loading states
+  /* -------------------- LOADING STATES -------------------- */
   const [driversLoading, setDriversLoading] = useState(true);
   const [busesLoading, setBusesLoading] = useState(true);
 
-  const isBlur = openDriverModal || openBusModal || openAssignModal;
-  const loading = schoolLoading || driversLoading || busesLoading;
+  const schoolId = user?.schoolId ?? null;
+  const schoolName = user?.name ?? "My School";
 
-  // Fetch drivers
+  const loading = schoolLoading || driversLoading || busesLoading;
+  const isBlur = openDriverModal || openBusModal || openAssignModal;
+
+  /* -------------------- ROUTE PROTECTION -------------------- */
+  useEffect(() => {
+    if (!schoolLoading) {
+      if (!user || user.role !== "school") {
+        router.replace("/");
+      }
+    }
+  }, [user, schoolLoading, router]);
+
+  /* -------------------- FETCH DRIVERS -------------------- */
   useEffect(() => {
     if (!schoolId) return;
 
     const q = query(collection(db, "drivers"), where("schoolId", "==", schoolId));
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({
         driverId: doc.id,
         ...(doc.data() as Omit<Driver, "driverId">),
       }));
+
       setDrivers(list);
       setDriversLoading(false);
     });
@@ -64,16 +75,18 @@ const School = () => {
     return () => unsubscribe();
   }, [schoolId]);
 
-  // Fetch buses
+  /* -------------------- FETCH BUSES -------------------- */
   useEffect(() => {
     if (!schoolId) return;
 
     const q = query(collection(db, "buses"), where("schoolId", "==", schoolId));
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map((doc) => ({
         busId: doc.id,
         ...(doc.data() as Omit<Bus, "busId">),
       }));
+
       setBuses(list);
       setBusesLoading(false);
     });
@@ -81,20 +94,32 @@ const School = () => {
     return () => unsubscribe();
   }, [schoolId]);
 
+  /* -------------------- LOGOUT -------------------- */
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push("/");
+      localStorage.removeItem("users");
+      document.cookie = "role=; path=/; max-age=0";
+      router.replace("/");
     } catch (error) {
       console.error("Error signing out:", error);
     }
   };
 
+  /* -------------------- PREVENT FLASH -------------------- */
+  if (loading || !user || user.role !== "school") {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  /* -------------------- UI -------------------- */
   return (
     <div className="p-6 space-y-6 relative max-w-7xl mx-auto">
+      
       {/* Header */}
       <header className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome, {schoolName}</h1>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Welcome, {schoolName}
+        </h1>
         <button
           onClick={handleSignOut}
           className="px-4 py-2 bg-red-900 text-white rounded-xl hover:bg-red-700 transition"
@@ -155,22 +180,34 @@ const School = () => {
 
         <div className="p-4 bg-gray-100 rounded-lg shadow">
           <p className="text-gray-500">Assigned Drivers</p>
-          <p className="text-2xl font-bold">{drivers.filter(d => d.busId).length}</p>
+          <p className="text-2xl font-bold">
+            {drivers.filter((d) => d.busId).length}
+          </p>
         </div>
 
         <div className="p-4 bg-gray-100 rounded-lg shadow">
           <p className="text-gray-500">Unassigned Buses</p>
-          <p className="text-2xl font-bold">{buses.filter(b => !b.driverId).length}</p>
+          <p className="text-2xl font-bold">
+            {buses.filter((b) => !b.driverId).length}
+          </p>
         </div>
       </div>
 
       {/* Modals */}
-      {openDriverModal && <AddDriver onClose={() => setOpenDriverModal(false)} />}
-      {openBusModal && <AddBus onClose={() => setOpenBusModal(false)} />}
-      {openAssignModal && <BusAssignment onClose={() => setOpenAssignModal(false)} />}
+      {openDriverModal && (
+        <AddDriver onClose={() => setOpenDriverModal(false)} />
+      )}
+      {openBusModal && (
+        <AddBus onClose={() => setOpenBusModal(false)} />
+      )}
+      {openAssignModal && (
+        <BusAssignment onClose={() => setOpenAssignModal(false)} />
+      )}
 
-      {/* Blur effect */}
-      {isBlur && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"></div>}
+      {/* Blur Effect */}
+      {isBlur && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"></div>
+      )}
     </div>
   );
 };

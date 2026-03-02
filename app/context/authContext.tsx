@@ -1,28 +1,33 @@
-// context/AuthContext.tsx
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
+import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebase";
-import { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthUser {
     uid: string;
-    role: string;
+    role: "school" | "driver" | "parent";
     schoolId: string;
     name?: string;
-    schoolName?: string;
     email?: string | null;
     busId?: string;
     studentId?: string;
 }
 
-const AuthContext = createContext<{
+interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
-}>({ user: null, loading: true });
+    logout: () => Promise<void>;
+}
 
-export const AuthProvider = ({ children }: any) => {
+const AuthContext = createContext<AuthContextType>({
+    user: null,
+    loading: true,
+    logout: async () => {},
+});
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -34,13 +39,25 @@ export const AuthProvider = ({ children }: any) => {
                 return;
             }
 
+            // Try to get user from Firestore "users" collection
             const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+
             if (snap.exists()) {
+                const data = snap.data() as any;
+                const role: "school" | "driver" | "parent" = data.role || "school";
+
                 setUser({
                     uid: firebaseUser.uid,
+                    role,
+                    schoolId: data.schoolId,
+                    name: data.name,
                     email: firebaseUser.email ?? null,
-                    ...snap.data(),
-                } as AuthUser);
+                    busId: data.busId || null,
+                    studentId: data.studentId || null,
+                });
+            } else {
+                // If user not found in "users", treat as logged out
+                setUser(null);
             }
 
             setLoading(false);
@@ -49,8 +66,15 @@ export const AuthProvider = ({ children }: any) => {
         return () => unsubscribe();
     }, []);
 
+    const logout = async () => {
+        await signOut(auth);
+        setUser(null);
+        localStorage.removeItem("users");
+        document.cookie = "role=; path=/; max-age=0";
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading }}>
+        <AuthContext.Provider value={{ user, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );

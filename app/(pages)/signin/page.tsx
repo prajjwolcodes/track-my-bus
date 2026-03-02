@@ -87,19 +87,17 @@ export default function AuthForm() {
             alert("Please request OTP again")
             return
         }
-
         if (!otp || otp.length < 4) {
             alert("Please enter a valid OTP")
             return
         }
-
         setLoading(true)
         try {
             const result = await confirmationResult.confirm(otp)
 
             console.log("OTP verified", result.user)
 
-            setStep("mpin-setup") // move to MPIN setup
+            setStep("mpin-setup")
         } catch (error) {
             alert("Invalid OTP")
         } finally {
@@ -183,68 +181,86 @@ export default function AuthForm() {
         try {
             // SCHOOL LOGIN
             if (data.role === "school") {
-                const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password)
-                const uid = userCredential.user.uid
-                const userDoc = await getDoc(doc(db, "schools", uid))
+                const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password);
+                const uid = userCredential.user.uid;
 
+                const userDoc = await getDoc(doc(db, "schools", uid));
                 if (!userDoc.exists()) {
-                    alert("User data not found in schools collection")
-                    return
+                    alert("User data not found in schools collection");
+                    return;
                 }
-                router.push("/school")
+
+                const userData = userDoc.data();
+                // Save in localStorage
+                localStorage.setItem("users", JSON.stringify({
+                    uid,
+                    role: "school",
+                    schoolId: uid,
+                    name: userData.name,
+                    email: data.email,
+                }));
+
+                document.cookie = "role=school; path=/; max-age=86400";
+                router.push("/school");
             }
 
             // DRIVER/STUDENT LOGIN
+            // DRIVER/PARENT LOGIN
             if (data.role === "driver" || data.role === "parent") {
                 if (!selectedSchoolId) {
-                    alert("Please select school")
-                    return
+                    alert("Please select school");
+                    return;
                 }
-                setPhone(data.phone)
 
-                if (!schools || schools.length === 0) return
-                const q = data.role === "driver" ?
-                    query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone))
-                    :
-                    query(collection(db, "students"), where("schoolId", "==", selectedSchoolId), where("parentPhone", "==", data.phone))
-                const querySnapshot = await getDocs(q);
-                const queryDocs: any[] = [];
-                querySnapshot.forEach((doc) => {
-                    queryDocs.push({
-                        id: doc.id,
-                        ...doc.data()
-                    })
-                });
+                setPhone(data.phone);
 
-                data.role === "driver" ? setDriver(queryDocs[0]) : setParent(queryDocs[0])
+                if (!schools || schools.length === 0) return;
 
-
-
-                if (querySnapshot.empty) {
-                    alert(`No ${data.role} found with this phone number in the selected school`)
-                    return
-                }
-                if (!querySnapshot.docs[0].data().mpin) {
-                    try {
-                        setupRecaptcha()
-                        const appVerifier = (window as any).recaptchaVerifier
-                        // Nepal format example (+977)
-                        const formattedPhone = `+977${data.phone}`
-                        const confirmation = await signInWithPhoneNumber(
-                            auth,
-                            formattedPhone,
-                            appVerifier
+                // Query user in Firestore
+                const q =
+                    data.role === "driver"
+                        ? query(
+                            collection(db, "drivers"),
+                            where("schoolId", "==", selectedSchoolId),
+                            where("phone", "==", data.phone)
                         )
-                        setConfirmationResult(confirmation)
-                        setStep("otp")
-                        alert("OTP sent successfully")
-                    } catch (err) {
-                        console.log(err)
-                        alert("Failed to send OTP")
-                    }
-                    return
+                        : query(
+                            collection(db, "students"),
+                            where("schoolId", "==", selectedSchoolId),
+                            where("parentPhone", "==", data.phone)
+                        );
+
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) {
+                    alert(`No ${data.role} found with this phone number in the selected school`);
+                    return;
                 }
-                setStep("mpin")
+
+                const userDocData = querySnapshot.docs[0].data();
+                const userId = querySnapshot.docs[0].id;
+
+                // Save driver/parent in state for later OTP/MPIN
+                if (data.role === "driver") setDriver({ id: userId, ...userDocData });
+                else setParent({ id: userId, ...userDocData });
+
+                // If MPIN is not set, go to OTP step
+                if (!userDocData.mpin) {
+                    try {
+                        setupRecaptcha();
+                        const appVerifier = (window as any).recaptchaVerifier;
+                        const formattedPhone = `+977${data.phone}`;
+                        const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+                        setConfirmationResult(confirmation);
+                        setStep("otp");
+                        alert("OTP sent successfully");
+                    } catch (err) {
+                        console.log(err);
+                        alert("Failed to send OTP");
+                    }
+                    return; 
+                }
+
+                setStep("mpin");
             }
         } catch (error: any) {
             console.log(error)
@@ -446,4 +462,3 @@ export default function AuthForm() {
     )
 }
 
-// MPIN COMPONENT

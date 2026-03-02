@@ -5,14 +5,16 @@ import { generateToken } from '@/firebase/firebase-messaging'
 import { listenBusLocation } from '@/firebase/rtdb'
 import { getMessaging, onMessage } from 'firebase/messaging'
 import { useEffect, useState } from 'react'
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
     collection,
     query,
     where,
-    onSnapshot
+    onSnapshot,
+    doc,
+    getDoc
 } from "firebase/firestore";
 import { db } from '@/firebase/firebase'
-import { useAuth } from '@/app/context/authContext'
 
 // const LocationTestPage = () => {
 //     const [position, setPosition] = useState<Position | null>(null)
@@ -117,12 +119,41 @@ interface Bus {
 }
 
 const TestDriversAndBusesPage = () => {
-    const { user, loading: authLoading } = useAuth();
-    const schoolId = user?.schoolId ?? null;
-    const userEmail = user?.email ?? null;
+    const auth = getAuth();
 
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [buses, setBuses] = useState<Bus[]>([]);
+    const [schoolId, setSchoolId] = useState<string | null>(null);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+
+    // Get logged-in user's schoolId
+    useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                setAuthLoading(false);
+                return;
+            }
+
+            // ✅ Email is instant (no Firestore needed)
+            setUserEmail(user.email);
+
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userDocRef);
+
+                if (userSnap.exists()) {
+                    setSchoolId(userSnap.data().schoolId);
+                }
+            } catch (error) {
+                console.error("Error fetching schoolId:", error);
+            }
+
+            setAuthLoading(false);
+        });
+
+        return () => unsubscribeAuth();
+    }, []);
 
     // Fetch drivers
     useEffect(() => {
