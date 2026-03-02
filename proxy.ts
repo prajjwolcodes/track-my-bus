@@ -1,37 +1,58 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
+const authRoutes = ["/signin", "/signup"];
+const validRoles = ["school", "driver", "parent"] as const;
+type Role = (typeof validRoles)[number];
 const roleRoutes: Record<string, string> = {
-    "/school": "school",
-    "/driver": "driver",
-    "/parent": "parent",
-}
+  "/school": "school",
+  "/driver": "driver",
+  "/parent": "parent",
+};
 
-const authRoutes = ["/signin", "/signup"]
+const getRoleFromCookie = (request: NextRequest): Role | null => {
+  const rawRole = request.cookies.get("role")?.value;
+  if (!rawRole) return null;
+  return (validRoles as readonly string[]).includes(rawRole) ? (rawRole as Role) : null;
+};
 
 export function proxy(request: NextRequest) {
-    const path = request.nextUrl.pathname
-    const role = request.cookies.get("role")?.value
+  const { pathname } = request.nextUrl;
+  const rawRole = request.cookies.get("role")?.value;
+  const role = getRoleFromCookie(request);
+  const hasInvalidRoleCookie = !!rawRole && !role;
 
-    // Logged in → block /signin and /signup → redirect to own dashboard
-    if (authRoutes.includes(path) && role) {
-        return NextResponse.redirect(new URL(`/${role}`, request.url))
+  const maybeClearInvalidRoleCookie = (response: NextResponse) => {
+    if (hasInvalidRoleCookie) {
+      response.cookies.set("role", "", { path: "/", maxAge: 0 });
     }
+    return response;
+  };
 
-    // Not logged in → block protected routes → redirect to /signin
-    const requiredRole = roleRoutes[path]
-    if (requiredRole && !role) {
-        return NextResponse.redirect(new URL("/signin", request.url))
+  if (authRoutes.includes(pathname)) {
+    if (role) {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
     }
+    return maybeClearInvalidRoleCookie(NextResponse.next());
+  }
 
-    // Wrong role → redirect to own dashboard
-    if (requiredRole && role && role !== requiredRole) {
-        return NextResponse.redirect(new URL(`/${role}`, request.url))
+  const requiredRole = roleRoutes[pathname];
+  if (requiredRole) {
+    if (!role) {
+      return maybeClearInvalidRoleCookie(
+        NextResponse.redirect(new URL("/signin", request.url))
+      );
     }
+    if (role !== requiredRole) {
+      return NextResponse.redirect(new URL(`/${role}`, request.url));
+    }
+  }
 
-    return NextResponse.next()
+  return maybeClearInvalidRoleCookie(NextResponse.next());
 }
+
+export default proxy;
 
 export const config = {
-    matcher: ["/school", "/driver", "/parent", "/signin", "/signup"],
-}
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

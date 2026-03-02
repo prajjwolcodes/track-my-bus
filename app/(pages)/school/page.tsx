@@ -51,7 +51,7 @@ const School = () => {
   useEffect(() => {
     if (!schoolLoading) {
       if (!user || user.role !== "school") {
-        router.replace("/");
+        router.replace("/signin");
       }
     }
   }, [user, schoolLoading, router]);

@@ -181,30 +181,37 @@ export default function AuthForm() {
         try {
             // SCHOOL LOGIN
             if (data.role === "school") {
-                const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password);
-                const uid = userCredential.user.uid;
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password);
+                    const uid = userCredential.user.uid;
 
-                const userDoc = await getDoc(doc(db, "schools", uid));
-                if (!userDoc.exists()) {
-                    alert("User data not found in schools collection");
-                    return;
+                    const userDoc = await getDoc(doc(db, "schools", uid));
+                    if (!userDoc.exists()) {
+                        alert("User data not found in schools collection");
+                        return;
+                    }
+
+                    const idToken = await userCredential.user.getIdToken();
+
+                    // Call API and wait for success
+                    const res = await fetch("/api/session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idToken }),
+                    });
+                    const result = await res.json();
+
+                    if (result.status === "success") {
+                        router.push("/school"); // redirect only after cookie is set
+                    } else {
+                        alert(result.message || "Login failed");
+                    }
+                } catch (error: any) {
+                    console.log(error);
+                    alert(error.message || "Login failed");
                 }
-
-                const userData = userDoc.data();
-                // Save in localStorage
-                localStorage.setItem("users", JSON.stringify({
-                    uid,
-                    role: "school",
-                    schoolId: uid,
-                    name: userData.name,
-                    email: data.email,
-                }));
-
-                document.cookie = "role=school; path=/; max-age=86400";
-                router.push("/school");
             }
 
-            // DRIVER/STUDENT LOGIN
             // DRIVER/PARENT LOGIN
             if (data.role === "driver" || data.role === "parent") {
                 if (!selectedSchoolId) {
@@ -257,10 +264,18 @@ export default function AuthForm() {
                         console.log(err);
                         alert("Failed to send OTP");
                     }
-                    return; 
+                    return;
                 }
-
                 setStep("mpin");
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    const idToken = await currentUser.getIdToken();
+                    await fetch("/api/session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idToken }),
+                    });
+                }
             }
         } catch (error: any) {
             console.log(error)

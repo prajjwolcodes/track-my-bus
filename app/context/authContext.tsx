@@ -30,20 +30,25 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const clearRoleCookie = () => {
+        document.cookie = "role=; path=/; max-age=0";
+        document.cookie = "schoolId=; path=/; max-age=0";
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (!firebaseUser) {
                 setUser(null);
+                clearRoleCookie();
                 setLoading(false);
                 return;
             }
 
-            // Try to get user from Firestore "users" collection
-            const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+            // Try "users" first
+            const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
 
-            if (snap.exists()) {
-                const data = snap.data() as any;
+            if (userSnap.exists()) {
+                const data = userSnap.data() as any;
                 const role: "school" | "driver" | "parent" = data.role || "school";
 
                 setUser({
@@ -56,8 +61,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     studentId: data.studentId || null,
                 });
             } else {
-                // If user not found in "users", treat as logged out
-                setUser(null);
+                // Fallback for school auth (school uid is used during login)
+                const schoolSnap = await getDoc(doc(db, "schools", firebaseUser.uid));
+                if (schoolSnap.exists()) {
+                    const schoolData = schoolSnap.data() as any;
+                    setUser({
+                        uid: firebaseUser.uid,
+                        role: "school",
+                        schoolId: schoolData.schoolId || "",
+                        name: schoolData.name,
+                        email: firebaseUser.email ?? null,
+                    });
+                } else {
+                    // Unknown user for app routing; clear stale cookies to avoid proxy loops
+                    setUser(null);
+                    clearRoleCookie();
+                }
             }
 
             setLoading(false);
