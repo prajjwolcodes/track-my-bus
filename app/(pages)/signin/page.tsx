@@ -65,6 +65,12 @@ export default function AuthForm() {
     const [otp, setOtp] = useState("")
     const [mpin, setMpin] = useState("")
 
+    const setClientRoleCookies = (role: "school" | "driver" | "parent", schoolId?: string) => {
+        document.cookie = `role=${role}; path=/; max-age=${60 * 60 * 24 * 2}; samesite=strict`
+        if (schoolId) {
+            document.cookie = `schoolId=${schoolId}; path=/; max-age=${60 * 60 * 24 * 2}; samesite=strict`
+        }
+    }
 
 
     const setupRecaptcha = () => {
@@ -126,6 +132,7 @@ export default function AuthForm() {
                     mpin: mpinHash,
                 })
                 alert("MPIN set successfully")
+                setClientRoleCookies("driver", driver.schoolId)
                 router.push("/driver")
             } else if (parent?.id) {
                 const parentRef = doc(db, "students", parent.id)
@@ -133,6 +140,7 @@ export default function AuthForm() {
                     mpin: mpinHash,
                 })
                 alert("MPIN set successfully")
+                setClientRoleCookies("parent", parent.schoolId)
                 router.push("/parent")
             }
         } catch (error) {
@@ -267,15 +275,6 @@ export default function AuthForm() {
                     return;
                 }
                 setStep("mpin");
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    const idToken = await currentUser.getIdToken();
-                    await fetch("/api/session", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ idToken }),
-                    });
-                }
             }
         } catch (error: any) {
             console.log(error)
@@ -307,7 +306,19 @@ export default function AuthForm() {
                 return
             }
 
-            router.push(driver ? "/driver" : "/parent")
+            if (driver) {
+                setClientRoleCookies("driver", driver.schoolId)
+                router.push("/driver")
+                return
+            }
+
+            if (parent) {
+                setClientRoleCookies("parent", parent.schoolId)
+                router.push("/parent")
+                return
+            }
+
+            alert("User role not resolved. Please sign in again.")
         } catch (error) {
             console.log(error)
             alert("Login failed")
@@ -476,4 +487,3 @@ export default function AuthForm() {
         </div>
     )
 }
-
