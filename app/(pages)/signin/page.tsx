@@ -72,7 +72,6 @@ export default function AuthForm() {
         }
     }
 
-
     const setupRecaptcha = () => {
         if (!(window as any).recaptchaVerifier) {
             (window as any).recaptchaVerifier = new RecaptchaVerifier(
@@ -207,13 +206,18 @@ export default function AuthForm() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ idToken }),
                     });
-                    const result = await res.json();
+                    console.log("user doc:", userDoc.data())
+                    console.log("API response:", res);
 
-                    if (result.status === "success") {
-                        router.push("/school"); // redirect only after cookie is set
-                    } else {
-                        alert(result.message || "Login failed");
+                    // const result = await res.json();
+
+                    if (userDoc.data()?.role !== "school") {
+                        alert("User role mismatch. Access denied.");
+                        return;
                     }
+                    setClientRoleCookies("school", userDoc.data()?.schoolId);
+                    router.push("/school");
+
                 } catch (error: any) {
                     console.log(error);
                     alert(error.message || "Login failed");

@@ -1,67 +1,35 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import admin from "@/lib/firebaseAdmin";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/firebase/firebase";
 
-export async function POST(request: Request) {
-  try {
-    const { idToken } = await request.json();
-    const expiresIn = 60 * 60 * 24 * 2 * 1000; // 2 days
+export async function POST(req: NextRequest) {
+  console.log("test")
+    // only POST is allowed
+    // if (req.method !== "POST") {
+    //     return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+    // }
 
-    // Create Firebase session cookie
-    const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
+    // req.body is a stream, parse it explicitly
+    const { idToken } = await req.json();
 
-    // Decode ID token to get UID
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const uid = decodedToken.uid;
+    try {
+        // Create a session cookie 
+        const expiresIn = 5 * 24 * 60 * 60 * 1000;
+        const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
+        console.log("Session cookie created:", sessionCookie);
 
-    // Fetch school document using UID
-    const schoolDocRef = doc(db, "schools", uid);
-    const schoolDoc = await getDoc(schoolDocRef);
+        // build the response and attach the cookie
+        const response = NextResponse.json({ message: "Cookie set" }, { status: 200 });
+        response.cookies.set("token", sessionCookie, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: expiresIn / 1000,
+            path: "/",
+            sameSite: "strict",
+        });
 
-    if (!schoolDoc.exists()) {
-      return NextResponse.json(
-        { status: "error", message: "School not found" },
-        { status: 400 }
-      );
+        return response;
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
-
-    const data = schoolDoc.data();
-    const role = "school";
-    const schoolId = data.schoolId;
-
-    // Response with cookies
-    const response = NextResponse.json({ status: "success", role, schoolId });
-
-    response.cookies.set("session", sessionCookie, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: expiresIn / 1000,
-      path: "/",
-      sameSite: "strict",
-    });
-
-    response.cookies.set("role", role, {
-      httpOnly: false, // can read client-side
-      secure: process.env.NODE_ENV === "production",
-      maxAge: expiresIn / 1000,
-      path: "/",
-      sameSite: "strict",
-    });
-
-    response.cookies.set("schoolId", schoolId, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: expiresIn / 1000,
-      path: "/",
-      sameSite: "strict",
-    });
-
-    return response;
-  } catch (error: any) {
-    return NextResponse.json(
-      { status: "error", message: error.message },
-      { status: 400 }
-    );
-  }
 }

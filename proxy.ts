@@ -1,58 +1,62 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import admin from "@/lib/firebaseAdmin";
 
-const authRoutes = ["/signin", "/signup"];
-const validRoles = ["school", "driver", "parent"] as const;
-type Role = (typeof validRoles)[number];
-const roleRoutes: Record<string, string> = {
-  "/school": "school",
-  "/driver": "driver",
-  "/parent": "parent",
+// Define role-based routes
+const ROLE_ROUTES: { [key: string]: string } = {
+  school: "/school",
+  driver: "/driver",
+  parent: "/parent",
 };
 
-const getRoleFromCookie = (request: NextRequest): Role | null => {
-  const rawRole = request.cookies.get("role")?.value;
-  if (!rawRole) return null;
-  return (validRoles as readonly string[]).includes(rawRole) ? (rawRole as Role) : null;
-};
+export async function proxy(req: NextRequest) {
+  const url = req.nextUrl.clone();
+  const token = req.cookies.get("token")?.value || null; 
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const rawRole = request.cookies.get("role")?.value;
-  const role = getRoleFromCookie(request);
-  const hasInvalidRoleCookie = !!rawRole && !role;
-
-  const maybeClearInvalidRoleCookie = (response: NextResponse) => {
-    if (hasInvalidRoleCookie) {
-      response.cookies.set("role", "", { path: "/", maxAge: 0 });
+  console.log("token in proxy:", token);
+  // Public routes (like signin)
+  if (url.pathname.startsWith("/signin")) {
+    if (token) {
+      try {
+        const decoded = await admin.auth().verifyIdToken(token);
+        const roleRoute = ROLE_ROUTES[decoded.role] || "/"; // fallback
+        return NextResponse.redirect(new URL(roleRoute, req.url));
+      } catch (error) {
+        return NextResponse.next();
+      }
     }
-    return response;
-  };
-
-  if (authRoutes.includes(pathname)) {
-    if (role) {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
-    return maybeClearInvalidRoleCookie(NextResponse.next());
+    return NextResponse.next(); 
   }
 
-  const requiredRole = roleRoutes[pathname];
-  if (requiredRole) {
-    if (!role) {
-      return maybeClearInvalidRoleCookie(
-        NextResponse.redirect(new URL("/signin", request.url))
-      );
-    }
-    if (role !== requiredRole) {
-      return NextResponse.redirect(new URL(`/${role}`, request.url));
-    }
+  // Protected routes
+  if (!token) {
+    // Not logged in
+    return NextResponse.redirect(new URL("/signin", req.url));
   }
 
-  return maybeClearInvalidRoleCookie(NextResponse.next());
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    const roleRoute = ROLE_ROUTES[decoded.role];
+    if (!roleRoute) {
+      // Unknown role, redirect to signin
+      return NextResponse.redirect(new URL("/signin", req.url));
+    }
+
+    // Block access to other roles
+    if (!url.pathname.startsWith(roleRoute)) {
+      return NextResponse.redirect(new URL(roleRoute, req.url));
+    }
+
+    // Access granted
+    return NextResponse.next();
+  } catch (error) {
+    // Invalid token
+    return NextResponse.redirect(new URL("/signin", req.url));
+  }
 }
 
-export default proxy;
-
+// Apply middleware to all routes except static files
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+    matcher: ["/((?!_next/static|favicon.ico|$).*)"],
+
 };

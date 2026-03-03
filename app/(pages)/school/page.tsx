@@ -146,7 +146,7 @@ const School = () => {
 
         <Link
           href="/student"
-          className="p-6 bg-cyan-950 text-white rounded-xl shadow hover:scale-105 transition"
+          className="p-6 bg-cyan-950 text-white rounded-xl shadow hover:scale-105 transition text-center"
         >
           Add Student
         </Link>
