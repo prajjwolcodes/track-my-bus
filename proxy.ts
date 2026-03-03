@@ -10,21 +10,27 @@ const ROLE_ROUTES: { [key: string]: string } = {
 
 export async function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
-  const token = req.cookies.get("token")?.value || null; 
+  const token = req.cookies.get("token")?.value || null;
 
-  console.log("token in proxy:", token);
   // Public routes (like signin)
   if (url.pathname.startsWith("/signin")) {
     if (token) {
       try {
-        const decoded = await admin.auth().verifyIdToken(token);
-        const roleRoute = ROLE_ROUTES[decoded.role] || "/"; // fallback
+        const decoded = await admin.auth().verifySessionCookie(token);
+        // Get user with custom claims
+        const user = await admin.auth().getUser(decoded.uid);
+        const role = user.customClaims?.role;
+        const roleRoute = ROLE_ROUTES[role] || "/"; // fallback
         return NextResponse.redirect(new URL(roleRoute, req.url));
       } catch (error) {
         return NextResponse.next();
       }
     }
-    return NextResponse.next(); 
+    return NextResponse.next();
+  }
+
+  if (url.pathname.startsWith("/api/")) {
+    return NextResponse.next(); // skip API routes
   }
 
   // Protected routes
@@ -34,9 +40,12 @@ export async function proxy(req: NextRequest) {
   }
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await admin.auth().verifySessionCookie(token);
+    // Get user with custom claims
+    const user = await admin.auth().getUser(decoded.uid);
+    const role = user.customClaims?.role;
 
-    const roleRoute = ROLE_ROUTES[decoded.role];
+    const roleRoute = ROLE_ROUTES[role];
     if (!roleRoute) {
       // Unknown role, redirect to signin
       return NextResponse.redirect(new URL("/signin", req.url));
@@ -51,12 +60,15 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     // Invalid token
+    console.log("first")
+    console.log(error)
     return NextResponse.redirect(new URL("/signin", req.url));
   }
 }
 
 // Apply middleware to all routes except static files
 export const config = {
-    matcher: ["/((?!_next/static|favicon.ico|$).*)"],
-
+  matcher: [
+    "/((?!_next/static|favicon.ico|api/|$).*)", // exclude all /api/*
+  ],
 };

@@ -64,6 +64,7 @@ export default function AuthForm() {
     const [confirmationResult, setConfirmationResult] = useState<any>(null)
     const [otp, setOtp] = useState("")
     const [mpin, setMpin] = useState("")
+    const [userCredential, setUserCredential] = useState<any>(null)
 
     const setClientRoleCookies = (role: "school" | "driver" | "parent", schoolId?: string) => {
         document.cookie = `role=${role}; path=/; max-age=${60 * 60 * 24 * 2}; samesite=strict`
@@ -102,6 +103,9 @@ export default function AuthForm() {
 
             console.log("OTP verified", result.user)
 
+            // Store the credential for later session creation
+            setUserCredential(result)
+
             setStep("mpin-setup")
         } catch (error) {
             alert("Invalid OTP")
@@ -131,16 +135,58 @@ export default function AuthForm() {
                     mpin: mpinHash,
                 })
                 alert("MPIN set successfully")
+
+                // Create session token before redirecting
+                if (userCredential) {
+                    try {
+                        const idToken = await userCredential.user.getIdToken();
+                        const res = await fetch("/api/session", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ idToken, role: "driver" }),
+                            credentials: "include",
+                        });
+                        if (!res.ok) {
+                            throw new Error("Failed to create session");
+                        }
+                    } catch (err) {
+                        console.error("Session creation failed:", err);
+                        alert("Failed to create session. Please try again.");
+                        return;
+                    }
+                }
+
                 setClientRoleCookies("driver", driver.schoolId)
-                router.push("/driver")
+                window.location.href = "/driver"
             } else if (parent?.id) {
                 const parentRef = doc(db, "students", parent.id)
                 await updateDoc(parentRef, {
                     mpin: mpinHash,
                 })
                 alert("MPIN set successfully")
+
+                // Create session token before redirecting
+                if (userCredential) {
+                    try {
+                        const idToken = await userCredential.user.getIdToken();
+                        const res = await fetch("/api/session", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ idToken, role: "parent" }),
+                            credentials: "include",
+                        });
+                        if (!res.ok) {
+                            throw new Error("Failed to create session");
+                        }
+                    } catch (err) {
+                        console.error("Session creation failed:", err);
+                        alert("Failed to create session. Please try again.");
+                        return;
+                    }
+                }
+
                 setClientRoleCookies("parent", parent.schoolId)
-                router.push("/parent")
+                window.location.href = "/parent"
             }
         } catch (error) {
             console.log(error)
@@ -200,23 +246,31 @@ export default function AuthForm() {
 
                     const idToken = await userCredential.user.getIdToken();
 
+                    console.log("ID TOKEN FROM SIGNIN", idToken)
                     // Call API and wait for success
                     const res = await fetch("/api/session", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ idToken }),
+                        body: JSON.stringify({ idToken, role: "school" }),
+                        credentials: "include", // Important to include cookies in the request
                     });
+
                     console.log("user doc:", userDoc.data())
                     console.log("API response:", res);
 
-                    // const result = await res.json();
+                    if (!res.ok) {
+                        const error = await res.json();
+                        alert("Failed to set session: " + error.error);
+                        return;
+                    }
 
                     if (userDoc.data()?.role !== "school") {
                         alert("User role mismatch. Access denied.");
                         return;
                     }
-                    setClientRoleCookies("school", userDoc.data()?.schoolId);
-                    router.push("/school");
+
+                    // Redirect with full page reload to trigger middleware
+                    window.location.href = "/school";
 
                 } catch (error: any) {
                     console.log(error);
@@ -311,14 +365,52 @@ export default function AuthForm() {
             }
 
             if (driver) {
+                // Create session token before redirecting
+                if (userCredential) {
+                    try {
+                        const idToken = await userCredential.user.getIdToken();
+                        const res = await fetch("/api/session", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ idToken }),
+                            credentials: "include",
+                        });
+                        if (!res.ok) {
+                            throw new Error("Failed to create session");
+                        }
+                    } catch (err) {
+                        console.error("Session creation failed:", err);
+                        alert("Failed to create session. Please try again.");
+                        return;
+                    }
+                }
                 setClientRoleCookies("driver", driver.schoolId)
-                router.push("/driver")
+                window.location.href = "/driver"
                 return
             }
 
             if (parent) {
+                // Create session token before redirecting
+                if (userCredential) {
+                    try {
+                        const idToken = await userCredential.user.getIdToken();
+                        const res = await fetch("/api/session", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ idToken }),
+                            credentials: "include",
+                        });
+                        if (!res.ok) {
+                            throw new Error("Failed to create session");
+                        }
+                    } catch (err) {
+                        console.error("Session creation failed:", err);
+                        alert("Failed to create session. Please try again.");
+                        return;
+                    }
+                }
                 setClientRoleCookies("parent", parent.schoolId)
-                router.push("/parent")
+                window.location.href = "/parent"
                 return
             }
 
