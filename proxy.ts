@@ -10,6 +10,7 @@ const ROLE_ROUTES: Record<string, string> = {
 
 export async function proxy(req: NextRequest) {
     const token = req.cookies.get("token")?.value;
+    console.log("TOKEN", token)
     const { pathname } = req.nextUrl;
 
     const publicRoutes = ["/signin", "/signup"];
@@ -24,6 +25,7 @@ export async function proxy(req: NextRequest) {
 
     try {
         // Verify Firebase ID Token
+
         const decoded = await adminAuth.verifyIdToken(token);
         const role = decoded.role as string;
 
