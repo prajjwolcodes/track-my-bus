@@ -1,12 +1,16 @@
 import admin from "firebase-admin";
-var serviceAccount = require("@/lib/track-my-bus-admin-sdk.json");
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!);
 
 if (!admin.apps.length) {
     admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        databaseURL: process.env.FIREBASE_rtdb_databaseURL
+        credential: admin.credential.cert({
+            projectId: serviceAccount.project_id,
+            clientEmail: serviceAccount.client_email,
+            privateKey: serviceAccount.private_key.replace(/\\n/g, "\n"),
+        }),
     });
 }
 
 export const adminAuth = admin.auth();
-export const adminMessaging = admin.messaging()
+export const adminMessaging = admin.messaging();
