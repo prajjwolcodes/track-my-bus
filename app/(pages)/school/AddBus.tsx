@@ -69,6 +69,7 @@ const AddBus: React.FC<Props> = ({ onClose }) => {
                 const busId = generateId('BUS', schoolId!)
                 await setDoc(doc(db, 'buses', busId), {
                     busId: busId,
+                    name: `Bus No: ${bus.busNo} - ${busId}`,
                     busNo: bus.busNo,
                     plateNo: bus.plateNo,
                     routeNo: null,

@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 
 const Signup: React.FC = () => {
     const router = useRouter();
-
     const [name, setName] = useState<string>("");
     const [address, setAddress] = useState<string>("");
     const [email, setEmail] = useState<string>("");
@@ -38,7 +37,7 @@ const Signup: React.FC = () => {
             // 1 Add to 'schools' collection 
             await setDoc(doc(db, "schools", uid), {
                 schoolId,
-                name,
+                name: `${name} (${schoolId})`,
                 address,
                 email,
                 contact,
@@ -73,7 +72,7 @@ const Signup: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted/40 to-muted px-4">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-muted/40 to-muted px-4">
             <Card className="w-full max-w-md shadow-xl border-0">
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">

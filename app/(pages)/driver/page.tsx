@@ -1,5 +1,6 @@
 "use client"
 
+import LogoutButton from "@/components/LogoutButton"
 import { updateBusLocation } from "@/firebase/rtdb"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -85,6 +86,8 @@ const DriverPage = () => {
 
     return (
         <div className="flex flex-col gap-4 text-center">DriverPage
+
+            <LogoutButton />
 
             <button onClick={startTrip}>START Trip</button>
             <button onClick={stopTrip}>STOP Trip</button>

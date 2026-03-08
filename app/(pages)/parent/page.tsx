@@ -1,8 +1,11 @@
+import LogoutButton from '@/components/LogoutButton'
 import React from 'react'
 
 const page = () => {
     return (
-        <div>page</div>
+        <div>page
+            <LogoutButton />
+        </div>
     )
 }
 

@@ -1,15 +1,15 @@
 "use client"
 
-import { RecaptchaVerifier, signInWithEmailAndPassword, signInWithPhoneNumber } from "firebase/auth"
+import { RecaptchaVerifier, signInWithCustomToken, signInWithEmailAndPassword, signInWithPhoneNumber } from "firebase/auth"
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { auth, db } from "@/firebase/firebase"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { set, z } from "zod"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,7 +30,7 @@ const schoolSchema = z.object({
     role: z.literal("school"),
     email: z.string().email("Invalid email"),
     password: z.string(),
-    phone: z.string().optional(),
+
 })
 
 const phoneSchema = z.object({
@@ -39,9 +39,7 @@ const phoneSchema = z.object({
         .string()
         .min(10, "Phone must be at least 10 digits")
         .regex(/^\d+$/, "Phone must be numeric"),
-    studentId: z.string().optional(),
-    email: z.string().optional(),
-    password: z.string().optional(),
+
 })
 
 const formSchema = z.discriminatedUnion("role", [
@@ -55,12 +53,9 @@ export default function AuthForm() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [step, setStep] = useState<"form" | "otp" | "mpin" | "mpin-setup">("form")
-    const [phone, setPhone] = useState("")
     const [schools, setSchools] = useState<any[]>([])
-    const [driver, setDriver] = useState<any>(null)
-    const [parent, setParent] = useState<any>(null)
+    const userDataRef = useRef<any>(null)
     const [selectedSchoolId, setSelectedSchoolId] = useState("")
-
     const [confirmationResult, setConfirmationResult] = useState<any>(null)
     const [otp, setOtp] = useState("")
     const [mpin, setMpin] = useState("")
@@ -80,6 +75,7 @@ export default function AuthForm() {
 
     const role = watch("role")
 
+    // Fetch schools once on mount, not on every role change
     useEffect(() => {
         async function fetchSchools() {
             try {
@@ -93,8 +89,8 @@ export default function AuthForm() {
                 console.error("Error fetching schools:", err)
             }
         }
-        if (role !== "school") { fetchSchools() }
-    }, [role])
+        fetchSchools()
+    }, [])
 
     const onSubmit = async (data: FormValues) => {
         setLoading(true)
@@ -103,8 +99,7 @@ export default function AuthForm() {
             // SCHOOL LOGIN
             if (data.role === "school") {
                 const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password)
-                const uid = userCredential.user.uid
-                const userDoc = await getDoc(doc(db, "schools", uid))
+                const userDoc = await getDoc(doc(db, "schools", userCredential.user.uid))
 
                 if (!userDoc.exists()) {
                     alert("User data not found in schools collection")
@@ -112,80 +107,59 @@ export default function AuthForm() {
                 }
                 await fetch("/api/session/set-cookie", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ token: await userCredential.user.getIdToken() }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: await userCredential.user.getIdToken(), role: "school" }),
                 })
                 router.push("/school")
+                return
             }
 
-            // DRIVER/STUDENT LOGIN
-            if (data.role === "driver" || data.role === "parent") {
-                if (!selectedSchoolId) {
-                    alert("Please select school")
-                    return
-                }
-                setPhone(data.phone)
-
-                if (!schools || schools.length === 0) return
-                const q = data.role === "driver" ?
-                    query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone))
-                    :
-                    query(collection(db, "students"), where("schoolId", "==", selectedSchoolId), where("parentPhone", "==", data.phone))
-                const querySnapshot = await getDocs(q);
-                const queryDocs: any[] = [];
-                querySnapshot.forEach((doc) => {
-                    queryDocs.push({
-                        id: doc.id,
-                        ...doc.data()
-                    })
-                });
-
-                data.role === "driver" ? setDriver(queryDocs[0]) : setParent(queryDocs[0])
-
-                if (querySnapshot.empty) {
-                    alert(`No ${data.role} found with this phone number in the selected school`)
-                    return
-                }
-                if (!querySnapshot.docs[0].data().mpin) {
-                    try {
-                        setupRecaptcha()
-                        const appVerifier = (window as any).recaptchaVerifier
-                        // Nepal format example (+977)
-                        const formattedPhone = `+977${data.phone}`
-                        const confirmation = await signInWithPhoneNumber(
-                            auth,
-                            formattedPhone,
-                            appVerifier
-                        )
-                        await fetch("/api/session/set-cookie", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({ token: await auth.currentUser?.getIdToken() }),
-                        })
-                        setConfirmationResult(confirmation)
-                        setStep("otp")
-                        alert("OTP sent successfully")
-                    } catch (err) {
-                        console.log(err)
-                        alert("Failed to send OTP")
-                    }
-                    return
-                }
-                setStep("mpin")
+            // DRIVER/PARENT LOGIN
+            if (!selectedSchoolId) {
+                alert("Please select school")
+                return
             }
+
+            const q = data.role === "driver" ?
+                query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone))
+                :
+                query(collection(db, "students"), where("schoolId", "==", selectedSchoolId), where("parentPhone", "==", data.phone))
+
+            const querySnapshot = await getDocs(q)
+
+            if (querySnapshot.empty) {
+                alert(`No ${data.role} found with this phone number in the selected school`)
+                return
+            }
+            userDataRef.current = querySnapshot.docs[0].data()
+            userDataRef.current.id = querySnapshot.docs[0].id
+
+            if (!userDataRef.current.mpin) {
+                setupRecaptcha()
+                const appVerifier = (window as any).recaptchaVerifier
+                const formattedPhone = `+977${data.phone}`
+
+                try {
+                    const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier)
+                    setConfirmationResult(confirmation)
+                    setStep("otp")
+                    alert("OTP sent successfully")
+                } catch (err) {
+                    console.error("OTP Error:", err)
+                    alert("Failed to send OTP")
+                }
+                return
+            }
+
+            setStep("mpin")
         } catch (error: any) {
-            console.log(error)
+            console.error(error)
             alert(error.code || "Something went wrong")
         } finally {
             setLoading(false)
         }
     }
 
-    // MPIN LOGIN FUNCTION
     const handleMPINLogin = async (mpin: string) => {
         if (!mpin || mpin.length < 4) {
             alert("Please enter a valid MPIN")
@@ -193,23 +167,51 @@ export default function AuthForm() {
         }
 
         setLoading(true)
-        try {
 
-            const storedHash = driver?.mpin || parent?.mpin
-            if (!storedHash) {
+        try {
+            if (!userDataRef.current?.mpin) {
                 alert("MPIN not set. Please verify OTP first.")
                 return
             }
 
             const mpinHash = await hashMPIN(mpin)
-            if (mpinHash !== storedHash) {
+
+            if (mpinHash !== userDataRef.current.mpin) {
                 alert("Invalid MPIN")
                 return
             }
 
-            router.push(driver ? "/driver" : "/parent")
+            // 🔹 Generate token from server
+            const res = await fetch("/api/session/mpin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    uid: userDataRef.current.id,
+                    role
+                }),
+            })
+
+            const data = await res.json()
+
+            const token = data.token
+
+            // 🔹 Sign in to Firebase
+            await signInWithCustomToken(auth, token)
+
+            // 🔹 Get ID token
+            const idToken = await auth.currentUser?.getIdToken()
+
+            // 🔹 Send cookie to server
+            await fetch("/api/session/set-cookie", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken, role }),
+            })
+
+            router.push(role === "driver" ? "/driver" : "/parent")
+
         } catch (error) {
-            console.log(error)
+            console.error(error)
             alert("Login failed")
         } finally {
             setLoading(false)
@@ -217,7 +219,7 @@ export default function AuthForm() {
     }
 
     const saveMPIN = async () => {
-        if (!driver?.id && !parent?.id) {
+        if (!userDataRef.current?.id) {
             alert("User not found")
             return
         }
@@ -230,24 +232,41 @@ export default function AuthForm() {
         setLoading(true)
         try {
             const mpinHash = await hashMPIN(mpin)
+            const isDriver = !!userDataRef.current.driverId
 
-            if (driver?.id) {
-                const driverRef = doc(db, "drivers", driver.id)
-                await updateDoc(driverRef, {
-                    mpin: mpinHash,
-                })
-                alert("MPIN set successfully")
-                router.push("/driver")
-            } else if (parent?.id) {
-                const parentRef = doc(db, "students", parent.id)
-                await updateDoc(parentRef, {
-                    mpin: mpinHash,
-                })
-                alert("MPIN set successfully")
-                router.push("/parent")
-            }
+            const userRef = doc(db, isDriver ? "drivers" : "students", userDataRef.current.id)
+            await updateDoc(userRef, { mpin: mpinHash })
+
+            alert("MPIN set successfully")
+            const res = await fetch("/api/session/mpin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    uid: userDataRef.current.id,
+                    role
+                }),
+            })
+
+            const data = await res.json()
+
+            const token = data.token
+
+            // 🔹 Sign in to Firebase
+            await signInWithCustomToken(auth, token)
+
+            // 🔹 Get ID token
+            const idToken = await auth.currentUser?.getIdToken()
+
+            // 🔹 Send cookie to server
+            await fetch("/api/session/set-cookie", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken, role }),
+            })
+
+            router.push(role === "driver" ? "/driver" : "/parent")
         } catch (error) {
-            console.log(error)
+            console.error(error)
             alert("Failed to save MPIN")
         } finally {
             setLoading(false)
@@ -356,21 +375,13 @@ export default function AuthForm() {
                                     <div className="space-y-2">
                                         <Label>Email</Label>
                                         <Input {...register("email")} />
-                                        {role === "school" && errors.email && (
-                                            <p className="text-sm text-red-500">
-                                                {errors.email.message}
-                                            </p>
-                                        )}
+
                                     </div>
 
                                     <div className="space-y-2">
                                         <Label>Password</Label>
                                         <Input type="password" {...register("password")} />
-                                        {role === "school" && errors.password && (
-                                            <p className="text-sm text-red-500">
-                                                {errors.password.message}
-                                            </p>
-                                        )}
+
                                     </div>
                                 </>
                             )}
@@ -380,11 +391,7 @@ export default function AuthForm() {
                                 <div className="space-y-2">
                                     <Label>Phone</Label>
                                     <Input {...register("phone")} />
-                                    {errors.phone && (
-                                        <p className="text-sm text-red-500">
-                                            {errors.phone.message}
-                                        </p>
-                                    )}
+
                                 </div>
                             )}
 
