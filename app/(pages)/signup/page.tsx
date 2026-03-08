@@ -38,7 +38,7 @@ const Signup: React.FC = () => {
             // 1 Add to 'schools' collection 
             await setDoc(doc(db, "schools", uid), {
                 schoolId,
-                name,
+                name: `${name} (${schoolId})`,
                 address,
                 email,
                 contact,

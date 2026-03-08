@@ -10,7 +10,7 @@ const ROLE_ROUTES: Record<string, string> = {
 
 export async function proxy(req: NextRequest) {
     const token = req.cookies.get("token")?.value;
-    console.log("TOKEN", token)
+    const roleFromCookie = req.cookies.get("role")?.value;
     const { pathname } = req.nextUrl;
 
     const publicRoutes = ["/signin", "/signup"];
@@ -26,8 +26,15 @@ export async function proxy(req: NextRequest) {
     try {
         // Verify Firebase ID Token
 
-        const decoded = await adminAuth.verifyIdToken(token);
-        const role = decoded.role as string;
+        await adminAuth.verifyIdToken(token);
+        const role = roleFromCookie as string | undefined;
+
+        if (!role || !ROLE_ROUTES[role]) {
+            const response = NextResponse.redirect(new URL("/signin", req.url));
+            response.cookies.delete("token");
+            response.cookies.delete("role");
+            return response;
+        }
 
         const allowedRoute = ROLE_ROUTES[role];
 
@@ -43,13 +50,14 @@ export async function proxy(req: NextRequest) {
 
         // If logged in user tries to visit signin/siignup
         if (publicRoutes.includes(pathname)) {
-            return NextResponse.redirect(new URL(role, req.url));
+            return NextResponse.redirect(new URL(ROLE_ROUTES[role], req.url));
         }
 
         return NextResponse.next();
     } catch (error) {
         const response = NextResponse.redirect(new URL("/signin", req.url));
         response.cookies.delete("token");
+        response.cookies.delete("role");
         return response;
     }
 }

@@ -105,11 +105,10 @@ export default function AuthForm() {
                     alert("User data not found in schools collection")
                     return
                 }
-
                 await fetch("/api/session/set-cookie", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: await userCredential.user.getIdToken() }),
+                    body: JSON.stringify({ token: await userCredential.user.getIdToken(), role: "school" }),
                 })
                 router.push("/school")
                 return
@@ -206,7 +205,7 @@ export default function AuthForm() {
             await fetch("/api/session/set-cookie", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: idToken }),
+                body: JSON.stringify({ token: idToken, role }),
             })
 
             router.push(role === "driver" ? "/driver" : "/parent")
@@ -239,7 +238,33 @@ export default function AuthForm() {
             await updateDoc(userRef, { mpin: mpinHash })
 
             alert("MPIN set successfully")
-            // router.push(isDriver ? "/driver" : "/parent")
+            const res = await fetch("/api/session/mpin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    uid: userDataRef.current.id,
+                    role
+                }),
+            })
+
+            const data = await res.json()
+
+            const token = data.token
+
+            // 🔹 Sign in to Firebase
+            await signInWithCustomToken(auth, token)
+
+            // 🔹 Get ID token
+            const idToken = await auth.currentUser?.getIdToken()
+
+            // 🔹 Send cookie to server
+            await fetch("/api/session/set-cookie", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken, role }),
+            })
+
+            router.push(role === "driver" ? "/driver" : "/parent")
         } catch (error) {
             console.error(error)
             alert("Failed to save MPIN")
