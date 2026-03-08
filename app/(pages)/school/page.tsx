@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { auth, db } from "@/firebase/firebase";
-import { signOut } from "firebase/auth";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/app/context/authContext";
-import AddDriver from "./AddDriver";
+import LogoutButton from "@/components/LogoutButton";
+import { db } from "@/firebase/firebase";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import AddBus from "./AddBus";
+import AddDriver from "./AddDriver";
 import BusAssignment from "./BusAssignment";
-import  Link  from "next/link";
 
 interface Bus {
   busId: string;
@@ -81,26 +81,12 @@ const School = () => {
     return () => unsubscribe();
   }, [schoolId]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   return (
     <div className="p-6 space-y-6 relative max-w-7xl mx-auto">
       {/* Header */}
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">Welcome, {schoolName}</h1>
-        <button
-          onClick={handleSignOut}
-          className="px-4 py-2 bg-red-900 text-white rounded-xl hover:bg-red-700 transition"
-        >
-          Sign Out
-        </button>
+        <LogoutButton />
       </header>
 
       {/* Action Cards */}

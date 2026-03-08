@@ -65,86 +65,6 @@ export default function AuthForm() {
     const [otp, setOtp] = useState("")
     const [mpin, setMpin] = useState("")
 
-
-
-    const setupRecaptcha = () => {
-        if (!(window as any).recaptchaVerifier) {
-            (window as any).recaptchaVerifier = new RecaptchaVerifier(
-                auth,
-                "recaptcha-container",
-                {
-                    size: "invisible",
-                    callback: () => {
-                        console.log("reCAPTCHA solved")
-                    },
-                }
-            )
-        }
-    }
-
-    const verifyOTP = async () => {
-        if (!confirmationResult) {
-            alert("Please request OTP again")
-            return
-        }
-
-        if (!otp || otp.length < 4) {
-            alert("Please enter a valid OTP")
-            return
-        }
-
-        setLoading(true)
-        try {
-            const result = await confirmationResult.confirm(otp)
-
-            console.log("OTP verified", result.user)
-
-            setStep("mpin-setup") // move to MPIN setup
-        } catch (error) {
-            alert("Invalid OTP")
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const saveMPIN = async () => {
-        if (!driver?.id && !parent?.id) {
-            alert("User not found")
-            return
-        }
-
-        if (!mpin || mpin.length < 4) {
-            alert("Please enter a valid MPIN")
-            return
-        }
-
-        setLoading(true)
-        try {
-            const mpinHash = await hashMPIN(mpin)
-
-            if (driver?.id) {
-                const driverRef = doc(db, "drivers", driver.id)
-                await updateDoc(driverRef, {
-                    mpin: mpinHash,
-                })
-                alert("MPIN set successfully")
-                router.push("/driver")
-            } else if (parent?.id) {
-                const parentRef = doc(db, "students", parent.id)
-                await updateDoc(parentRef, {
-                    mpin: mpinHash,
-                })
-                alert("MPIN set successfully")
-                router.push("/parent")
-            }
-        } catch (error) {
-            console.log(error)
-            alert("Failed to save MPIN")
-        } finally {
-            setLoading(false)
-        }
-    }
-
     const {
         register,
         handleSubmit,
@@ -168,7 +88,6 @@ export default function AuthForm() {
                     id: doc.id,
                     ...doc.data(),
                 }))
-                console.log(schoolsData)
                 setSchools(schoolsData)
             } catch (err) {
                 console.error("Error fetching schools:", err)
@@ -191,6 +110,13 @@ export default function AuthForm() {
                     alert("User data not found in schools collection")
                     return
                 }
+                await fetch("/api/session/set-cookie", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ token: await userCredential.user.getIdToken() }),
+                })
                 router.push("/school")
             }
 
@@ -218,8 +144,6 @@ export default function AuthForm() {
 
                 data.role === "driver" ? setDriver(queryDocs[0]) : setParent(queryDocs[0])
 
-
-
                 if (querySnapshot.empty) {
                     alert(`No ${data.role} found with this phone number in the selected school`)
                     return
@@ -235,6 +159,13 @@ export default function AuthForm() {
                             formattedPhone,
                             appVerifier
                         )
+                        await fetch("/api/session/set-cookie", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ token: await auth.currentUser?.getIdToken() }),
+                        })
                         setConfirmationResult(confirmation)
                         setStep("otp")
                         alert("OTP sent successfully")
@@ -280,6 +211,85 @@ export default function AuthForm() {
         } catch (error) {
             console.log(error)
             alert("Login failed")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const saveMPIN = async () => {
+        if (!driver?.id && !parent?.id) {
+            alert("User not found")
+            return
+        }
+
+        if (!mpin || mpin.length < 4) {
+            alert("Please enter a valid MPIN")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const mpinHash = await hashMPIN(mpin)
+
+            if (driver?.id) {
+                const driverRef = doc(db, "drivers", driver.id)
+                await updateDoc(driverRef, {
+                    mpin: mpinHash,
+                })
+                alert("MPIN set successfully")
+                router.push("/driver")
+            } else if (parent?.id) {
+                const parentRef = doc(db, "students", parent.id)
+                await updateDoc(parentRef, {
+                    mpin: mpinHash,
+                })
+                alert("MPIN set successfully")
+                router.push("/parent")
+            }
+        } catch (error) {
+            console.log(error)
+            alert("Failed to save MPIN")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+
+    const setupRecaptcha = () => {
+        if (!(window as any).recaptchaVerifier) {
+            (window as any).recaptchaVerifier = new RecaptchaVerifier(
+                auth,
+                "recaptcha-container",
+                {
+                    size: "invisible",
+                    callback: () => {
+                        console.log("reCAPTCHA solved")
+                    },
+                }
+            )
+        }
+    }
+
+    const verifyOTP = async () => {
+        if (!confirmationResult) {
+            alert("Please request OTP again")
+            return
+        }
+
+        if (!otp || otp.length < 4) {
+            alert("Please enter a valid OTP")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const result = await confirmationResult.confirm(otp)
+
+            console.log("OTP verified", result.user)
+
+            setStep("mpin-setup") // move to MPIN setup
+        } catch (error) {
+            alert("Invalid OTP")
         } finally {
             setLoading(false)
         }
