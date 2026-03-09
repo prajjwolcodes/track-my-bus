@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import { hashMPIN } from "@/lib/hashMpin"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 import MPINComponent from "./MpinComponent"
 
 const schoolSchema = z.object({
@@ -405,6 +406,15 @@ export default function AuthForm() {
                                 )}
                                 Continue
                             </Button>
+                            <div className="text-center text-sm mt-4">
+                                Don’t have an account?{" "}
+                                <Link
+                                    href="/signup"
+                                    className="text-blue-900 hover:underline font-medium"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
                         </form>
                     )}
 

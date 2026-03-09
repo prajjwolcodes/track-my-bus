@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebase";
@@ -147,6 +148,14 @@ const Signup: React.FC = () => {
                     >
                         Register School
                     </Button>
+                    <div className="text-center text-sm mt-2">
+                        <Link
+                            href="/signin"
+                            className="text-blue-900 hover:underline font-medium"
+                        >
+                            Sign In
+                        </Link>
+                    </div>
                 </CardContent>
             </Card>
         </div>
