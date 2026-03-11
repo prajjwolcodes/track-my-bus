@@ -9,12 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "browser-image-compression": "^2.0.2",
     "@hookform/resolvers": "^5.2.2",
+    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
-    "firebase": "^12.8.0",
+    "firebase": "^12.10.0",
     "firebase-admin": "^13.6.1",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.2",

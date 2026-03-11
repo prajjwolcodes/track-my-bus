@@ -146,89 +146,143 @@ const AddStudentPage: React.FC = () => {
         }
     }
 
-    return (
-        <div className="flex flex-col w-full bg-gray-100 items-center justify-center min-h-screen">
-            <form className="border max-w-3xl p-5" onSubmit={handleSubmit}>
-                <h1 className="text-2xl font-bold mb-4">Add Student</h1>
+return (
+  <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-6">
 
-                <input
-                    placeholder="Student Name"
-                    className="border p-2 rounded w-full mb-4"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
+    <form
+      className="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-8 space-y-6"
+      onSubmit={handleSubmit}
+    >
+      <h1 className="text-3xl font-bold text-gray-800 text-center">
+        Add Student
+      </h1>
 
-                <select
-                    className="border p-2 rounded w-full mb-4"
-                    value={grade}
-                    onChange={(e) => setGrade(e.target.value)}
-                >
-                    <option value="">Select Grade</option>
-                    {[...Array(10)].map((_, i) => (
-                        <option key={i} value={i + 1}>
-                            Grade {i + 1}
-                        </option>
-                    ))}
-                </select>
+      {/* Student Name */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Student Name
+        </label>
+        <input
+          placeholder="Enter student name"
+          className="border p-3 rounded-lg w-full mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
 
-                <select
-                    className="border p-2 rounded w-full mb-4"
-                    value={busNumber}
-                    onChange={(e) => setBusNumber(e.target.value)}
-                >
-                    <option value="">Select bus</option>
-                    {buses.map(bus => (
-                        <option key={bus.id} value={bus.busNo}>
-                            Bus {bus.busNo} ({bus.plateNo})
-                        </option>
-                    ))}
-                </select>
+      {/* Grade */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Grade
+        </label>
+        <select
+          className="border p-3 rounded-lg w-full mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+        >
+          <option value="">Select Grade</option>
+          {[...Array(10)].map((_, i) => (
+            <option key={i} value={i + 1}>
+              Grade {i + 1}
+            </option>
+          ))}
+        </select>
+      </div>
 
-                <input
-                    placeholder="Parent Name"
-                    className="border p-2 rounded w-full mb-4"
-                    value={parentName}
-                    onChange={(e) => setParentName(e.target.value)}
-                />
+      {/* Bus */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Bus
+        </label>
+        <select
+          className="border p-3 rounded-lg w-full mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+          value={busNumber}
+          onChange={(e) => setBusNumber(e.target.value)}
+        >
+          <option value="">Select Bus</option>
+          {buses.map((bus) => (
+            <option key={bus.id} value={bus.busNo}>
+              Bus {bus.busNo} ({bus.plateNo})
+            </option>
+          ))}
+        </select>
+      </div>
 
-                <input
-                    placeholder="Parent Phone"
-                    className="border p-2 rounded w-full mb-4"
-                    value={parentPhone}
-                    onChange={(e) => setParentPhone(e.target.value)}
-                />
+      {/* Parent Name */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Parent Name
+        </label>
+        <input
+          placeholder="Enter parent name"
+          className="border p-3 rounded-lg w-full mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+          value={parentName}
+          onChange={(e) => setParentName(e.target.value)}
+        />
+      </div>
 
-                <div>
-                    <label className="text-sm font-medium text-gray-600 ml-1">Student Photo</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="border p-2 rounded-xl w-full mt-1"
-                        onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-                    />
-                </div>
+      {/* Parent Phone */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Parent Phone
+        </label>
+        <input
+          placeholder="Enter parent phone"
+          className="border p-3 rounded-lg w-full mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+          value={parentPhone}
+          onChange={(e) => setParentPhone(e.target.value)}
+        />
+      </div>
 
-                <LocationPicker setPickupLocation={(location) => {
-                    if (location) {
-                        setPickupLocation({
-                            lat: location.lat,
-                            lng: location.lng,
-                            address: `${location.lat},${location.lng}` || ''
-                        })
-                    } else {
-                        setPickupLocation({ lat: null, lng: null, address: '' })
-                    }
-                }} />
+      {/* Photo Upload */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Student Photo
+        </label>
 
-                <button
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded w-full"
-                >
-                    {loading ? "Adding..." : "Add Student"}
-                </button>
-            </form>
+        <input
+          type="file"
+          accept="image/*"
+          className="border p-2 rounded-lg w-full mt-1 file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-blue-900 file:text-white file:rounded-lg file:cursor-pointer"
+          onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+        />
+      </div>
+
+      {/* Location Picker */}
+      <div>
+        <label className="text-sm font-medium text-gray-700">
+          Pickup Location
+        </label>
+
+        <div className="mt-2 rounded-xl overflow-hidden border">
+          <LocationPicker
+            setPickupLocation={(location) => {
+              if (location) {
+                setPickupLocation({
+                  lat: location.lat,
+                  lng: location.lng,
+                  address: `${location.lat},${location.lng}` || "",
+                });
+              } else {
+                setPickupLocation({ lat: null, lng: null, address: "" });
+              }
+            }}
+          />
         </div>
-    )
+      </div>
+
+      {/* Submit Button */}
+      <button
+        disabled={loading}
+        className="w-48 bg-blue-900 hover:bg-blue-800 transition text-white font-semibold py-3 rounded-lg shadow-md"
+      >
+        {loading ? "Adding..." : "Add Student"}
+      </button>
+
+
+    </form>
+  </div>
+)
 }
 
 export default AddStudentPage
