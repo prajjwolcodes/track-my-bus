@@ -5,10 +5,13 @@ import "leaflet/dist/leaflet.css";
 import { Marker as LeafletMarker } from "leaflet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import { accumulateMetadata } from "next/dist/lib/metadata/resolve-metadata";
 import { animateMarker } from "./utils";
 
-const BusMap = () => {
+interface BusMapProps {
+    busId?: string | number | null
+}
+
+const BusMap = ({ busId }: BusMapProps) => {
     const [draggable, setDraggable] = useState(false)
     const [position, setPosition] = useState<Position | null>(null)
     const markerRef = useRef<LeafletMarker>(null);
@@ -39,10 +42,13 @@ const BusMap = () => {
     }, [])
 
     useEffect(() => {
-        const unsubscribe = listenBusLocation(1, (data) => {
+        if (!busId) return
+
+        const unsubscribe = listenBusLocation(busId, (data) => {
             if (!data || !markerRef.current) return;
 
             const newPos = { lat: data.lat, lng: data.lng };
+            setPosition(data)
 
             // FIRST TIME → just place marker
             if (!prevPosRef.current) {
@@ -58,7 +64,7 @@ const BusMap = () => {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [busId]);
 
 
 
