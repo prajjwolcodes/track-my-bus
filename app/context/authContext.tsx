@@ -34,14 +34,45 @@ export const AuthProvider = ({ children }: any) => {
                 return;
             }
 
-            const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-            if (snap.exists()) {
+            const uid = firebaseUser.uid;
+            const email = firebaseUser.email ?? null;
+
+            const userSnap = await getDoc(doc(db, "users", uid));
+            if (userSnap.exists()) {
                 setUser({
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email ?? null,
-                    ...snap.data(),
+                    uid,
+                    email,
+                    ...userSnap.data(),
                 } as AuthUser);
+                setLoading(false);
+                return;
             }
+
+            const driverSnap = await getDoc(doc(db, "drivers", uid));
+            if (driverSnap.exists()) {
+                setUser({
+                    uid,
+                    email,
+                    role: "driver",
+                    ...driverSnap.data(),
+                } as AuthUser);
+                setLoading(false);
+                return;
+            }
+
+            const studentSnap = await getDoc(doc(db, "students", uid));
+            if (studentSnap.exists()) {
+                setUser({
+                    uid,
+                    email,
+                    role: "parent",
+                    ...studentSnap.data(),
+                } as AuthUser);
+                setLoading(false);
+                return;
+            }
+
+            setUser(null);
 
             setLoading(false);
         });

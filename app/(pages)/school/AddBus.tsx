@@ -17,6 +17,7 @@ interface Props {
 
 const AddBus: React.FC<Props> = ({ onClose }) => {
     const { user } = useAuth()
+    console.log(user)
     const schoolId = user?.schoolId ?? null
     const [buses, setBuses] = useState<BusForm[]>([{ busNo: '', plateNo: '' }])
     const [loading, setLoading] = useState(false)
@@ -50,6 +51,7 @@ const AddBus: React.FC<Props> = ({ onClose }) => {
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        console.log(schoolId)
         if (!schoolId) return alert('School ID not loaded yet')
         setLoading(true)
 

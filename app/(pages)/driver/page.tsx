@@ -1,8 +1,9 @@
 "use client"
 
+import { useAuth } from "@/app/context/authContext"
 import LogoutButton from "@/components/LogoutButton"
-import { updateBusLocation } from "@/firebase/rtdb"
-import { useRef, useState } from "react"
+import { setBusTripActive, updateBusLocation } from "@/firebase/rtdb"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 interface SuccessPosition extends GeolocationPosition {
@@ -12,14 +13,31 @@ interface GeolocationError extends GeolocationPositionError {
 }
 
 const DriverPage = () => {
+    const { user, loading: authLoading } = useAuth()
     const [position, setPosition] = useState<Position | null>(null)
     const [loading, setLoading] = useState<boolean>(false)
     const [started, setStarted] = useState<boolean>(false)
     const watchIdRef = useRef<number | null>(null);
+    const busId = user?.busId ?? null
+
+    useEffect(() => {
+        return () => {
+            if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+                watchIdRef.current = null;
+                if (busId) {
+                    void setBusTripActive(busId, false)
+                }
+            }
+        }
+    }, [busId])
 
     function startTrip() {
-        setStarted(true);
-        setLoading(true)
+        if (!busId) {
+            toast.error("No bus assigned to this driver")
+            return
+        }
+        const activeBusId = busId
 
         try {
             if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -29,15 +47,20 @@ const DriverPage = () => {
 
             if (watchIdRef.current !== null) return;
 
+            setStarted(true);
+            setLoading(true)
+            void setBusTripActive(activeBusId, true)
+
             function successCallback(pos: SuccessPosition): void {
                 const { coords, timestamp } = pos
                 const newPos = {
                     lat: coords.latitude,
                     lng: coords.longitude,
                     accuracy: coords.accuracy,
-                    timestamp: timestamp
+                    timestamp: timestamp,
+                    tripActive: true,
                 }
-                updateBusLocation(1, newPos)
+                updateBusLocation(activeBusId, newPos)
 
                 setPosition(newPos)
                 console.log(newPos)
@@ -67,6 +90,11 @@ const DriverPage = () => {
     }
 
     const stopTrip = () => {
+        if (!busId) {
+            setStarted(false)
+            return
+        }
+        const activeBusId = busId
 
         setStarted(false);
         setLoading(true)
@@ -74,6 +102,7 @@ const DriverPage = () => {
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
                 watchIdRef.current = null;
+                void setBusTripActive(activeBusId, false)
                 console.log("Trip stopped");
             }
         } catch (error) {
@@ -91,6 +120,10 @@ const DriverPage = () => {
 
             <button onClick={startTrip}>START Trip</button>
             <button onClick={stopTrip}>STOP Trip</button>
+
+            <p>
+                Assigned Bus: {authLoading ? "Loading assigned bus..." : (busId ?? "Not assigned")}
+            </p>
 
             {loading && <p>Loading...</p>}
             {started && position ? (

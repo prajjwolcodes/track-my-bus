@@ -27,6 +27,7 @@ interface Driver {
 const School = () => {
   const router = useRouter();
 
+
   // Modal states
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [openBusModal, setOpenBusModal] = useState(false);
