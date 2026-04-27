@@ -4,11 +4,15 @@ import { auth } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
-export default function LogoutButton() {
+export default function LogoutButton({ onBeforeLogout } = {}) {
     const router = useRouter();
 
     const handleLogout = async () => {
         try {
+            if (onBeforeLogout) {
+                await onBeforeLogout();
+            }
+
             // 1. Firebase logout
             await signOut(auth);
 

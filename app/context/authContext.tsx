@@ -15,6 +15,11 @@ interface AuthUser {
     email?: string | null;
     busId?: string;
     studentId?: string;
+    pickupLocation?: {
+        lat: number | null;
+        lng: number | null;
+        address?: string;
+    };
 }
 
 const AuthContext = createContext<{

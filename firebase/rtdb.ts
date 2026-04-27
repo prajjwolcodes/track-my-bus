@@ -7,7 +7,19 @@ export interface BusLocationPayload extends Position {
 
 export function updateBusLocation(busId: string | number, position: BusLocationPayload | null) {
     try {
-        return set(ref(realTimeDB, 'location/bus/' + busId), position);
+        const busRef = ref(realTimeDB, 'location/bus/' + busId);
+
+        if (position === null) {
+            return set(busRef, null);
+        }
+
+        return update(busRef, {
+            lat: position.lat,
+            lng: position.lng,
+            accuracy: position.accuracy,
+            timestamp: position.timestamp,
+            locationUpdatedAt: Date.now(),
+        });
     } catch (error) {
         return (error as Error).message
     }
