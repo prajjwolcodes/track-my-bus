@@ -11,9 +11,6 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Icon, Map, Marker as LeafletMarker } from "leaflet";
 
-const ENABLE_BUS_TOWARD_PICKUP_TEST = true;
-const SIMULATION_STEP_METERS = 35;
-
 const ParentMapClient = dynamic(() => import("./ParentMapClient"), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-slate-100" />,
@@ -48,16 +45,15 @@ const ParentPage = () => {
     const { user, loading: authLoading } = useAuth();
     // console.log(user)
     const [mapMounted, setMapMounted] = useState(false);
-    const [position, setPosition] = useState<BusLocationPayload | null>(null);
-    const [simulatedPosition, setSimulatedPosition] = useState<BusLocationPayload | null>(null);
+    const [position, setPosition] = useState < BusLocationPayload | null > (null);
     const [locationLoading, setLocationLoading] = useState(true);
     const [now, setNow] = useState(Date.now());
-    const [currentDistanceMeters, setCurrentDistanceMeters] = useState<number | null>(null);
-    const [markerIcon, setMarkerIcon] = useState<Icon | null>(null);
-    const mapRef = useRef<Map | null>(null);
-    const markerRef = useRef<LeafletMarker | null>(null);
-    const prevPositionRef = useRef<{ lat: number; lng: number } | null>(null);
-    const prevTripActiveRef = useRef<boolean | null>(null);
+    const [currentDistanceMeters, setCurrentDistanceMeters] = useState < number | null > (null);
+    const [markerIcon, setMarkerIcon] = useState < Icon | null > (null);
+    const mapRef = useRef < Map | null > (null);
+    const markerRef = useRef < LeafletMarker | null > (null);
+    const prevPositionRef = useRef < { lat: number; lng: number } | null > (null);
+    const prevTripActiveRef = useRef < boolean | null > (null);
     const hasNearbyToastTriggeredRef = useRef(false);
     const busId = user?.busId;
     const isTripActive = position?.tripActive === true;
@@ -67,10 +63,6 @@ const ParentPage = () => {
         typeof pickupLocation?.lat === "number" && typeof pickupLocation?.lng === "number"
             ? { lat: pickupLocation.lat, lng: pickupLocation.lng }
             : null;
-    const displayPosition = ENABLE_BUS_TOWARD_PICKUP_TEST ? simulatedPosition ?? position : position;
-    const displayHasLocation =
-        typeof displayPosition?.lat === "number" && typeof displayPosition?.lng === "number";
-    const displayIsTripActive = displayPosition?.tripActive === true;
 
     useEffect(() => {
         setMapMounted(true);
@@ -102,7 +94,6 @@ const ParentPage = () => {
         if (!busId) {
             setLocationLoading(false);
             setPosition(null);
-            setSimulatedPosition(null);
             return;
         }
 
@@ -114,9 +105,6 @@ const ParentPage = () => {
 
             const nextActive = data?.tripActive === true;
             const prevActive = prevTripActiveRef.current;
-
-
-            // -----------  ADD FIREBASE MESSAGING NOTIFICATION HERE FOR BUS START/STOP  --------------
 
             if (prevActive !== null && prevActive !== nextActive) {
                 if (nextActive) {
@@ -133,66 +121,9 @@ const ParentPage = () => {
     }, [busId]);
 
     useEffect(() => {
-        if (!ENABLE_BUS_TOWARD_PICKUP_TEST) return;
-        if (!pickupCoordinates || !displayIsTripActive) {
-            setSimulatedPosition(null);
-            return;
-        }
+        if (!position || !isTripActive || !markerRef.current) return;
 
-        const basePosition = simulatedPosition ?? position;
-        const startPosition =
-            basePosition && typeof basePosition.lat === "number" && typeof basePosition.lng === "number"
-                ? basePosition
-                : {
-                    lat: pickupCoordinates.lat + 0.01,
-                    lng: pickupCoordinates.lng + 0.01,
-                    tripActive: true,
-                    accuracy: 10,
-                    timestamp: Date.now(),
-                };
-
-        const interval = window.setInterval(() => {
-            setSimulatedPosition((current) => {
-                const source =
-                    current && typeof current.lat === "number" && typeof current.lng === "number"
-                        ? current
-                        : startPosition;
-
-                const currentDistance = haversineDistanceMeters(
-                    { lat: source.lat, lng: source.lng },
-                    pickupCoordinates
-                );
-
-                if (currentDistance <= 20) {
-                    return {
-                        ...source,
-                        lat: pickupCoordinates.lat,
-                        lng: pickupCoordinates.lng,
-                        timestamp: Date.now(),
-                    };
-                }
-
-                const moveRatio = Math.min(1, SIMULATION_STEP_METERS / Math.max(currentDistance, 1));
-                const nextLat = source.lat + (pickupCoordinates.lat - source.lat) * moveRatio;
-                const nextLng = source.lng + (pickupCoordinates.lng - source.lng) * moveRatio;
-
-                return {
-                    ...source,
-                    lat: nextLat,
-                    lng: nextLng,
-                    tripActive: true,
-                    timestamp: Date.now(),
-                };
-            });
-        }, 1000);
-
-        return () => window.clearInterval(interval);
-    }, [displayIsTripActive, pickupCoordinates, position, simulatedPosition]);
-
-    useEffect(() => {
-        if (!displayPosition || !displayIsTripActive || !markerRef.current) return;
-
-        const nextPos = { lat: displayPosition.lat, lng: displayPosition.lng };
+        const nextPos = { lat: position.lat, lng: position.lng };
 
         if (!prevPositionRef.current) {
             markerRef.current.setLatLng([nextPos.lat, nextPos.lng]);
@@ -202,7 +133,7 @@ const ParentPage = () => {
 
         animateMarker(markerRef.current, prevPositionRef.current, nextPos);
         prevPositionRef.current = nextPos;
-    }, [displayPosition, displayIsTripActive]);
+    }, [position, isTripActive]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -213,34 +144,31 @@ const ParentPage = () => {
     }, []);
 
     useEffect(() => {
-        if (!mapRef.current || !displayHasLocation || !displayIsTripActive) return;
+        if (!mapRef.current || !hasLocation || !isTripActive) return;
 
-        mapRef.current.flyTo([displayPosition.lat, displayPosition.lng], 16, {
+        mapRef.current.flyTo([position.lat, position.lng], 16, {
             animate: true,
             duration: 0.8,
         });
-    }, [displayPosition, displayHasLocation, displayIsTripActive]);
+    }, [position]);
 
     useEffect(() => {
         const pickupLat = pickupCoordinates?.lat;
         const pickupLng = pickupCoordinates?.lng;
 
-        if (!displayHasLocation || typeof pickupLat !== "number" || typeof pickupLng !== "number" || !displayIsTripActive) {
+        if (!hasLocation || typeof pickupLat !== "number" || typeof pickupLng !== "number" || !isTripActive) {
             hasNearbyToastTriggeredRef.current = false;
             setCurrentDistanceMeters(null);
             return;
         }
 
-        const busLocation = { lat: displayPosition.lat, lng: displayPosition.lng };
+        const busLocation = { lat: position.lat, lng: position.lng };
         const distanceInMeters = haversineDistanceMeters(busLocation, {
             lat: pickupLat,
             lng: pickupLng,
         });
-        console.log("distanceInMeters:", distanceInMeters);
         setCurrentDistanceMeters(distanceInMeters);
 
-
-        // -----------  ADD FIREBASE MESSAGING NOTIFICATION HERE FOR NEARBY EVENT  --------------
         if (distanceInMeters <= 200 && !hasNearbyToastTriggeredRef.current) {
             toast.success("Bus is within 200 meters of your pickup location.");
             hasNearbyToastTriggeredRef.current = true;
@@ -250,7 +178,7 @@ const ParentPage = () => {
         if (distanceInMeters > 300 && hasNearbyToastTriggeredRef.current) {
             hasNearbyToastTriggeredRef.current = false;
         }
-    }, [displayPosition, displayHasLocation, displayIsTripActive, pickupCoordinates]);
+    }, [position, hasLocation, isTripActive, pickupCoordinates]);
 
     const getLastUpdatedLabel = (timestamp: number) => {
         const diffMs = Math.max(0, now - timestamp);
@@ -267,9 +195,9 @@ const ParentPage = () => {
     };
 
     function recenterMap() {
-        if (!mapRef.current || !displayHasLocation) return;
+        if (!mapRef.current || !hasLocation) return;
 
-        mapRef.current.flyTo([displayPosition.lat, displayPosition.lng], 16, {
+        mapRef.current.flyTo([position.lat, position.lng], 16, {
             animate: true,
             duration: 0.8,
         });
@@ -323,9 +251,9 @@ const ParentPage = () => {
                                 mapRef={mapRef}
                                 markerRef={markerRef}
                                 markerIcon={markerIcon}
-                                isTripActive={displayIsTripActive}
-                                hasLocation={displayHasLocation}
-                                position={displayPosition}
+                                isTripActive={isTripActive}
+                                hasLocation={hasLocation}
+                                position={position}
                                 pickupLocation={pickupCoordinates}
                             />
                         ) : (

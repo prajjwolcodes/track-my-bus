@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Icon, Map } from "leaflet";
+import type { LeafletEventHandlerFnMap } from "leaflet";
 
 type Position = {
     lat: number;
@@ -25,6 +26,13 @@ const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: f
 type Coordinate = {
     lat: number;
     lng: number;
+};
+
+type StudentPickup = {
+    studentId?: string;
+    name?: string;
+    photo?: string | null;
+    pickupLocation?: Coordinate | null;
 };
 
 function animateCoordinate(
@@ -55,7 +63,8 @@ function animateCoordinate(
 }
 
 const DriverPage = () => {
-    const { user } = useAuth();
+    const { user } = useAuth()
+    console.log(user)
     const [position, setPosition] = useState<Position | null>(null);
     const [started, setStarted] = useState(false);
     const [trackingPhase, setTrackingPhase] = useState<"idle" | "locating" | "tracking">("idle");
@@ -69,6 +78,7 @@ const DriverPage = () => {
     const hasFirstFixRef = useRef(false);
     const didAutoResumeRef = useRef(false);
     const busId = user?.busId ?? null;
+    const students = (user?.students ?? []) as StudentPickup[];
 
     // Initialize marker icon on client side only
     useEffect(() => {
@@ -300,6 +310,17 @@ const DriverPage = () => {
         };
     }, [markerIcon, position, started]);
 
+    const studentPickupMarkers = students
+        .filter((student) => {
+            const lat = student.pickupLocation?.lat;
+            const lng = student.pickupLocation?.lng;
+            return typeof lat === "number" && typeof lng === "number";
+        })
+        .map((student) => ({
+            ...student,
+            pickupLocation: student.pickupLocation as Coordinate,
+        }));
+
     useEffect(() => {
         return () => {
             if (watchIdRef.current !== null) {
@@ -407,6 +428,55 @@ const DriverPage = () => {
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                 attribution='&copy; OpenStreetMap contributors'
                             />
+
+                            {studentPickupMarkers.map((student) => {
+                                const pickup = student.pickupLocation;
+                                const markerEventHandlers: LeafletEventHandlerFnMap = {
+                                    mouseover: (event) => {
+                                        event.target.openPopup();
+                                    },
+                                    mouseout: (event) => {
+                                        event.target.closePopup();
+                                    },
+                                };
+
+                                return (
+                                    <Marker
+                                        key={student.studentId ?? `${student.name}-${pickup.lat}-${pickup.lng}`}
+                                        position={[pickup.lat, pickup.lng]}
+                                        eventHandlers={markerEventHandlers}
+                                    >
+                                        <Popup closeButton={false} autoClose={false} closeOnClick={false}>
+                                            <div className="min-w-45 rounded-xl bg-white p-3 shadow-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-14 w-14 overflow-hidden rounded-full bg-slate-100 ring-2 ring-blue-100">
+                                                        {student.photo ? (
+                                                            <img
+                                                                src={student.photo}
+                                                                alt={student.name ?? "Student photo"}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-500">
+                                                                {student.name?.[0]?.toUpperCase() ?? "S"}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-slate-900">
+                                                            {student.name ?? "Student"}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500">Pickup location</p>
+                                                        <p className="mt-1 text-xs text-slate-600">
+                                                            {pickup.lat.toFixed(5)}, {pickup.lng.toFixed(5)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
 
                             {displayPosition && markerIcon && (
                                 <Marker
