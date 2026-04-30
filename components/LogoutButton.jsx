@@ -4,6 +4,9 @@ import { auth } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
+/**
+ * @param {{ onBeforeLogout?: () => Promise<void> | void }} props
+ */
 export default function LogoutButton({ onBeforeLogout } = {}) {
     const router = useRouter();
 

@@ -25,8 +25,10 @@ messaging.onBackgroundMessage(async (payload) => {
     const closedBody = payload.data?.tabClosedBody || "New update received";
     const icon = payload.notification?.icon || payload.data?.icon;
 
-    if (allClients.length > 0) {
-        // If any tab is open, send the data to the page and let it show an alert.
+    const hasVisibleClient = allClients.some((client) => client.visibilityState === "visible");
+
+    if (hasVisibleClient) {
+        // If a tab is visible, forward to app UI for in-app feedback.
         allClients.forEach((client) => {
             client.postMessage({
                 type: "FCM_ALERT",
@@ -40,7 +42,7 @@ messaging.onBackgroundMessage(async (payload) => {
         return;
     }
 
-    // No tab open: show a real notification.
+    // If no visible tab exists (closed or backgrounded), show a real system notification.
     await self.registration.showNotification(closedTitle, {
         body: closedBody,
         icon,

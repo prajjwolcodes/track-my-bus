@@ -337,7 +337,7 @@ const DriverPage = () => {
                         <h1 className="text-2xl font-bold text-gray-800">Driver Portal</h1>
                         <p className="text-sm text-gray-500">Manage your bus trip</p>
                     </div>
-                    {/* <LogoutButton onBeforeLogout={handleLogout} /> */}
+                    <LogoutButton onBeforeLogout={handleLogout} />
                 </div>
             </div>
 

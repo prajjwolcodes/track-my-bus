@@ -10,6 +10,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Icon, Map, Marker as LeafletMarker } from "leaflet";
+import { deleteField, doc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebase/firebase";
 
 const ENABLE_BUS_TOWARD_PICKUP_TEST = true;
 const SIMULATION_STEP_METERS = 35;
@@ -240,9 +242,25 @@ const ParentPage = () => {
         setCurrentDistanceMeters(distanceInMeters);
 
 
-        // -----------  ADD FIREBASE MESSAGING NOTIFICATION HERE FOR NEARBY EVENT  --------------
         if (distanceInMeters <= 200 && !hasNearbyToastTriggeredRef.current) {
-            toast.success("Bus is within 200 meters of your pickup location.");
+            fetch("/api/sendnotification", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    busId: busId,
+                    title: "Bus is very close",
+                    body: "Get ready. Your bus is arriving now.",
+                    data: {
+                        busId,
+                    },
+                }),
+            }).catch((error) => {
+                console.error("Failed to send proximity notification:", error);
+                toast.error("Unable to send proximity notification.");
+            });
+
             hasNearbyToastTriggeredRef.current = true;
             return;
         }
@@ -275,6 +293,19 @@ const ParentPage = () => {
         });
     }
 
+    async function handleBeforeLogout() {
+        if (user?.role !== "parent") return;
+
+        try {
+            await updateDoc(doc(db, "students", user.uid), {
+                notificationToken: deleteField(),
+                notificationTokenUpdatedAt: deleteField(),
+            });
+        } catch (error) {
+            console.error("Failed to clear FCM token on logout:", error);
+        }
+    }
+
     return (
         <div className="min-h-screen bg-linear-to-br from-emerald-50 to-cyan-100">
             <div className="sticky top-0 z-50 bg-white shadow-md">
@@ -283,7 +314,7 @@ const ParentPage = () => {
                         <h1 className="text-2xl font-bold text-gray-800">Parent Tracking</h1>
                         <p className="text-sm text-gray-500">Track your child&apos;s bus in real-time</p>
                     </div>
-                    <LogoutButton />
+                    <LogoutButton onBeforeLogout={handleBeforeLogout} />
                 </div>
             </div>
 
