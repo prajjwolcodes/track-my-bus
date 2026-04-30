@@ -14,6 +14,8 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(async (payload) => {
+    console.log("[SW] Background message received:", payload);
+
     const allClients = await self.clients.matchAll({
         type: "window",
         includeUncontrolled: true,
@@ -25,10 +27,12 @@ messaging.onBackgroundMessage(async (payload) => {
     const closedBody = payload.data?.tabClosedBody || "New update received";
     const icon = payload.notification?.icon || payload.data?.icon;
 
-    const hasVisibleClient = allClients.some((client) => client.visibilityState === "visible");
+    const hasVisibleClient = allClients.some(
+        (client) => client.visibilityState === "visible"
+    );
 
+    // If tab is visible → send message to UI
     if (hasVisibleClient) {
-        // If a tab is visible, forward to app UI for in-app feedback.
         allClients.forEach((client) => {
             client.postMessage({
                 type: "FCM_ALERT",
@@ -39,10 +43,11 @@ messaging.onBackgroundMessage(async (payload) => {
                 },
             });
         });
+
         return;
     }
 
-    // If no visible tab exists (closed or backgrounded), show a real system notification.
+
     await self.registration.showNotification(closedTitle, {
         body: closedBody,
         icon,
