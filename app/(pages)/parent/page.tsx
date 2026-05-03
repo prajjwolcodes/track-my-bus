@@ -214,16 +214,7 @@ const ParentPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        if (!mapRef.current || !displayHasLocation || !displayIsTripActive) return;
-
-        mapRef.current.flyTo([displayPosition.lat, displayPosition.lng], 16, {
-            animate: true,
-            duration: 0.8,
-        });
-    }, [displayPosition, displayHasLocation, displayIsTripActive]);
-
-    useEffect(() => {
+    useEffect(() {
         const pickupLat = pickupCoordinates?.lat;
         const pickupLng = pickupCoordinates?.lng;
 

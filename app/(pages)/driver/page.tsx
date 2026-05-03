@@ -253,15 +253,6 @@ const DriverPage = () => {
         return () => unsubscribe();
     }, [beginLocationWatch, busId]);
 
-    useEffect(() => {
-        if (!mapRef.current || !position) return;
-
-        mapRef.current.flyTo([position.lat, position.lng], 16, {
-            animate: true,
-            duration: 0.8,
-        });
-    }, [position]);
-
     function recenterMap() {
         if (!mapRef.current || !displayPosition) return;
 
