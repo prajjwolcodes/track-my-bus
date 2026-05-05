@@ -127,3 +127,11 @@
   height: 100%;
   width: 100%;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f5f3ea;
+}
