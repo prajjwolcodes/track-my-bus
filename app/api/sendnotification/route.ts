@@ -10,7 +10,7 @@ type SendNotificationRequest = {
 
 };
 
-async function sendInBatches(tokens: string[], payload: Parameters<typeof adminMessaging.sendEachForMulticast>[0]) {
+async function sendInBatches(tokens: string[], payload: Omit<Parameters<typeof adminMessaging.sendEachForMulticast>[0], "tokens">) {
     const batchSize = 500;
     let successCount = 0;
     let failureCount = 0;
@@ -69,8 +69,7 @@ export async function POST(request: Request) {
         const result = await sendInBatches(uniqueTokens, {
             notification: {
                 title: notificationTitle,
-                body: notificationBody,
-                icon: data?.icon,
+                body: notificationBody
             },
             data: {
                 tabOpenTitle: notificationTitle,

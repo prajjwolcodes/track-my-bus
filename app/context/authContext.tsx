@@ -13,6 +13,7 @@ interface AuthUser {
     name?: string;
     schoolName?: string;
     email?: string | null;
+    photoURL?: string | null;
     busId?: string;
     studentId?: string;
     pickupLocation?: {

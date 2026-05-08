@@ -74,7 +74,7 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
         return setDoc(doc(db, 'drivers', driverId), {
           driverId,
           role: "driver",
-          name: `${d.name} (${driverId})`,
+          name: `${d.name}`,
           phone: d.phone,
           photo: photoUrl,
           busId: null,

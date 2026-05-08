@@ -61,6 +61,8 @@ const ParentPage = () => {
     const prevPositionRef = useRef<{ lat: number; lng: number } | null>(null);
     const prevTripActiveRef = useRef<boolean | null>(null);
     const hasNearbyToastTriggeredRef = useRef(false);
+    const hasRecenteredOnTripStartRef = useRef(false);
+    const hasRecenteredOnInitialLoadRef = useRef(false);
     const busId = user?.busId;
     const isTripActive = position?.tripActive === true;
     const hasLocation = typeof position?.lat === "number" && typeof position?.lng === "number";
@@ -133,6 +135,13 @@ const ParentPage = () => {
 
         return () => unsubscribe();
     }, [busId]);
+
+    useEffect(() => {
+        hasNearbyToastTriggeredRef.current = false;
+        hasRecenteredOnInitialLoadRef.current = false;
+        setSimulatedPosition(null);
+        setCurrentDistanceMeters(null);
+    }, [user?.uid]);
 
     useEffect(() => {
         if (!ENABLE_BUS_TOWARD_PICKUP_TEST) return;
@@ -214,7 +223,9 @@ const ParentPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() {
+    useEffect(() => {
+        if (user?.role !== "parent") return;
+
         const pickupLat = pickupCoordinates?.lat;
         const pickupLng = pickupCoordinates?.lng;
 
@@ -259,7 +270,7 @@ const ParentPage = () => {
         if (distanceInMeters > 300 && hasNearbyToastTriggeredRef.current) {
             hasNearbyToastTriggeredRef.current = false;
         }
-    }, [displayPosition, displayHasLocation, displayIsTripActive, pickupCoordinates]);
+    }, [displayPosition, displayHasLocation, displayIsTripActive, pickupCoordinates, user?.role]);
 
     const getLastUpdatedLabel = (timestamp: number) => {
         const diffMs = Math.max(0, now - timestamp);
@@ -283,6 +294,36 @@ const ParentPage = () => {
             duration: 0.8,
         });
     }
+
+    useEffect(() => {
+        if (!displayIsTripActive || !displayHasLocation || !mapRef.current) return;
+
+        if (!hasRecenteredOnTripStartRef.current) {
+            mapRef.current.flyTo([displayPosition.lat, displayPosition.lng], 16, {
+                animate: true,
+                duration: 0.8,
+            });
+            hasRecenteredOnTripStartRef.current = true;
+        }
+    }, [displayIsTripActive]);
+
+    useEffect(() => {
+        if (!displayIsTripActive) {
+            hasRecenteredOnTripStartRef.current = false;
+        }
+    }, [displayIsTripActive]);
+
+    useEffect(() => {
+        if (!displayHasLocation || !mapRef.current) return;
+
+        if (!hasRecenteredOnInitialLoadRef.current) {
+            mapRef.current.flyTo([displayPosition.lat, displayPosition.lng], 16, {
+                animate: true,
+                duration: 0.8,
+            });
+            hasRecenteredOnInitialLoadRef.current = true;
+        }
+    }, [displayHasLocation]);
 
     async function handleBeforeLogout() {
         if (user?.role !== "parent") return;

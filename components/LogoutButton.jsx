@@ -2,6 +2,7 @@
 
 import { auth } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 /**
@@ -35,8 +36,9 @@ export default function LogoutButton({ onBeforeLogout } = {}) {
     return (
         <button
             onClick={handleLogout}
-            className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
+            className="flex justify-left text-sm font-semibold items-center w-full px-4 py-2 rounded-lg  text-red-500 border border-red-500 hover:text-gray-200 hover:bg-red-500 cursor-pointer transition"
         >
+            <LogOut className="inline-block mr-2" size={18} />
             Logout
         </button>
     );
