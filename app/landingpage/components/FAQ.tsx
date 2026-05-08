@@ -2,11 +2,22 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Libre_Baskerville, Nunito } from "next/font/google";
 
 interface FAQItem {
   question: string;
   answer: string;
 }
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 const faqData: FAQItem[] = [
   {
@@ -49,15 +60,17 @@ const FAQ: React.FC = () => {
   };
 
   return (
-    <section className="min-h-screen bg-[#F9F9F4] py-16 px-6 md:px-20 font-sans">
+    <section id="faq" className="bg-[#fdf9f2] min-h-screen py-16 px-6 md:px-20 font-sans">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
-        
-        {/* Left Side: Title and Description */}
+
         <div className="space-y-6">
-          <h2 className="text-5xl md:text-6xl font-serif text-[#333333] leading-tight">
+          <h2
+            className={`${libreBaskerville.className} text-[40px] text-[#313235] sm:text-[44px] lg:text-[48px]`}
+            style={{ lineHeight: "48px" }}
+          >
             Frequently Asked <br /> Questions
           </h2>
-          <p className="text-[#666666] text-lg max-w-md leading-relaxed">
+          <p className={`${nunito.className} text-[#666666] text-lg max-w-md leading-relaxed`}>
             Find answers to frequently asked questions about how the SmartYatra school bus tracking system works, including its real-time GPS tracking, safety monitoring features, instant notifications, route management, and how it helps parents, schools, and drivers stay connected throughout every journey.
           </p>
         </div>
@@ -72,7 +85,7 @@ const FAQ: React.FC = () => {
                 onClick={() => toggleFAQ(index)}
                 className="w-full flex items-center justify-between p-6 text-left"
               >
-                <span className="text-[17px] font-semibold text-[#333333]">
+                <span className={`${libreBaskerville.className} text-[17px] font-semibold text-[#333333]`}>
                   {item.question}
                 </span>
                 {openIndex === index ? (
@@ -83,11 +96,10 @@ const FAQ: React.FC = () => {
               </button>
 
               <div
-                className={`px-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                  openIndex === index ? "max-h-40 pb-6" : "max-h-0"
-                }`}
+                className={`px-6 overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index ? "max-h-40 pb-6" : "max-h-0"
+                  }`}
               >
-                <p className="text-[#555555] text-[15px] leading-relaxed">
+                <p className={`${nunito.className} text-[#555555] text-[15px] leading-relaxed`}>
                   {item.answer}
                 </p>
               </div>

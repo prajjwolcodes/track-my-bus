@@ -2,6 +2,18 @@
 
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
+import { Libre_Baskerville, Nunito } from "next/font/google"
+import { Bus } from "lucide-react";
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -22,16 +34,20 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100"
-          : "bg-[#f5f3ea]"
+      className={`fixed top-0 w-full z-50 transition-all duration-300 bg-[#fdf9f2] ${scrolled
+        ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100"
+        : "bg-[#f5f3ea]"
         }`}
     >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto py-4 flex justify-between items-center">
 
         {/* LOGO */}
-        <Link href="#home" className="flex items-center gap-2 font-bold text-blue-800 text-xl">
-          🚌 SmartYatra
+        <Link
+          href="#home"
+          className={`${libreBaskerville.className} flex items-center gap-2 font-bold text-blue-800 text-xl`}
+        >
+          <Bus className="w-6 h-6" />
+          <span>SmartYatra</span>
         </Link>
 
         {/* LINKS */}
@@ -40,7 +56,7 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="hover:text-blue-700 transition"
+              className={`${nunito.className} hover:text-blue-700 transition`}
             >
               {item.label}
             </Link>
@@ -52,14 +68,14 @@ export default function Navbar() {
 
           <Link
             href="/signin"
-            className="px-4 py-2 text-sm font-medium border border-blue-600 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+            className={`${nunito.className} px-4 py-2 text-sm font-medium border border-blue-800 text-blue-800 rounded-lg hover:bg-blue-100 transition-colors duration-200`}
           >
             Login
           </Link>
 
           <Link
             href="/signup"
-            className="px-4 py-2 text-sm font-medium bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors duration-200"
+            className={`${nunito.className} px-4 py-2 text-sm font-medium bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition-colors duration-200`}
           >
             Register
           </Link>
