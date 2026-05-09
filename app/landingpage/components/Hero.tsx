@@ -20,7 +20,7 @@ export default function Hero() {
     <section
       id="home"
       className="bg-[#fcfaf2] px-2 py-16 md:py-20 lg:py-20 overflow-hidden">
-      <div className="relative mx-auto w-full max-w-7xl sm:max-w-6xl rounded-4xl shadow-2xl overflow-visible">
+      <div className="relative mx-auto w-full max-w-7xl rounded-4xl shadow-2xl overflow-visible">
 
         <section className="relative h-[calc(100vh-64px)] w-full overflow-hidden">
           <Image

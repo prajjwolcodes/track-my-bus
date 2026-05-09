@@ -78,7 +78,7 @@ const Features: React.FC = () => {
     <section
       id="features"
       className="bg-[#fdf9f2] py-20 px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
         <div className={`${libreBaskerville.className} text-center mb-14`}>
