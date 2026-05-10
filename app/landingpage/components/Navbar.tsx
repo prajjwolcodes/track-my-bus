@@ -39,7 +39,7 @@ export default function Navbar() {
         : "bg-[#f5f3ea]"
         }`}
     >
-      <div className="max-w-7xl mx-auto py-4 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto py-2 flex justify-between items-center">
 
         {/* LOGO */}
         <Link

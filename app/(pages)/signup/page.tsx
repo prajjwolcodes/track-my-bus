@@ -186,16 +186,16 @@ const Signup = () => {
 
                     <div className="w-full max-w-md">
                         {/* TITLE */}
-                        <div className="mb-6">
+                        <div className="mb-4">
 
                             <h2
-                                className={`${libreBaskerville.className} text-4xl text-[#002D72] mb-1`}
+                                className={`${libreBaskerville.className} text-4xl text-[#002D72] mb-2`}
                             >
                                 Create Account
                             </h2>
 
                             <p
-                                className={`${nunito.className} text-gray-500 text-sm`}
+                                className={`${nunito.className} text-gray-500 text-sm mb-3`}
                             >
                                 Register your school to
                                 start managing smarter
@@ -380,7 +380,7 @@ const Signup = () => {
                                 onClick={
                                     handleRegister
                                 }
-                                className="w-full h-12 rounded-xl bg-[#0041A3] hover:bg-[#003482] text-white font-semibold shadow-lg shadow-blue-900/20 transition-all"
+                                className="w-full h-12 rounded-xl bg-[#0041A3] hover:bg-[#003482] text-white font-semibold shadow-lg shadow-blue-900/20 transition-all mt-2"
                             >
                                 {loading ? (
                                     <Loader2 className="animate-spin" />
@@ -405,37 +405,10 @@ const Signup = () => {
                                     Sign in
                                 </Link>
                             </p>
-
-                            <div className="mt-8 flex items-center justify-center gap-4 text-[11px] text-gray-400">
-
-                                <Link
-                                    href="/signin"
-                                    className="hover:text-gray-600"
-                                >
-                                    Privacy Policy
-                                </Link>
-
-                                <span>•</span>
-
-                                <Link
-                                    href="/signin"
-                                    className="hover:text-gray-600"
-                                >
-                                    Terms of Service
-                                </Link>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* SUPPORT BUTTON */}
-            <button className="fixed bottom-6 right-6 hidden md:flex items-center gap-3 rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-[#0041A3] shadow-xl transition-transform hover:scale-105">
-
-                <HeadphonesIcon size={18} />
-
-                Support Center
-            </button>
         </div>
     )
 }

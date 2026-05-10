@@ -55,7 +55,6 @@ const nunito = Nunito({
     weight: ["400", "600", "700"],
 })
 
-/* ---------------- SCHEMA ---------------- */
 
 const schoolSchema = z.object({
     role: z.literal("school"),
@@ -78,7 +77,6 @@ const formSchema = z.discriminatedUnion("role", [
 
 type FormValues = z.infer<typeof formSchema>
 
-/* ---------------- COMPONENT ---------------- */
 
 export default function AuthForm() {
     const router = useRouter()
@@ -119,7 +117,6 @@ export default function AuthForm() {
 
     const role = watch("role")
 
-    /* ---------------- PRELOAD ---------------- */
 
     useEffect(() => {
         async function fetchSchools() {
@@ -133,7 +130,6 @@ export default function AuthForm() {
         fetchSchools()
     }, [])
 
-    /* ---------------- MPIN ---------------- */
 
     const handleMpinChange = (
         value: string,
@@ -156,7 +152,6 @@ export default function AuthForm() {
         }
     }
 
-    /* ---------------- LOGIN ---------------- */
 
     const onSubmit = async (data: FormValues) => {
         setLoading(true)
@@ -193,7 +188,6 @@ export default function AuthForm() {
                 return
             }
 
-            /* DRIVER / PARENT */
             const q =
                 data.role === "driver"
                     ? query(
@@ -248,7 +242,6 @@ export default function AuthForm() {
         }
     }
 
-    /* ---------------- MPIN LOGIN ---------------- */
 
     const handleMPINLogin = async () => {
         const mpinString = mpin.join("")
@@ -302,7 +295,6 @@ export default function AuthForm() {
         }
     }
 
-    /* ---------------- RECAPTCHA ---------------- */
 
     const setupRecaptcha = () => {
         if (!(window as any).recaptchaVerifier) {
@@ -346,11 +338,11 @@ export default function AuthForm() {
                             <p
                                 className={`${nunito.className} text-white/90 leading-relaxed max-w-md text-base`}
                             >
-                                SmartYatra combines realtime school bus tracking, driver coordination, and parent notifications into one seamless platform focused on safety, efficiency, and better transportation management.
+                                SmartYatra combines realtime school bus tracking, driver coordination, and parent notifications into one seamless platform
+                                focused on safety, efficiency, and better transportation management.
                             </p>
                         </div>
 
-                        {/* BOTTOM */}
                         <div
                             className={`${nunito.className} flex items-center justify-between text-xs text-white/70`}
                         >
@@ -423,7 +415,6 @@ export default function AuthForm() {
                             ))}
                         </div>
 
-                        {/* LOGIN FORM */}
                         {step === "form" && (
                             <form
                                 onSubmit={handleSubmit(
@@ -666,14 +657,6 @@ export default function AuthForm() {
                     </div>
                 </div>
             </div>
-
-            {/* SUPPORT BUTTON */}
-            <button className="fixed bottom-6 right-6 hidden md:flex items-center gap-3 rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-[#0041A3] shadow-xl transition-transform hover:scale-105">
-
-                <HeadphonesIcon size={18} />
-
-                Support Center
-            </button>
         </div>
     )
 }
