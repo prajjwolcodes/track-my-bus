@@ -5,11 +5,21 @@ import LogoutButton from "@/components/LogoutButton"
 import { setBusTripActive, updateBusLocation } from "@/firebase/rtdb"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { 
+  MapPin, 
+  Navigation, 
+  Clock, 
+  ShieldCheck, 
+  Play, 
+  Square, 
+  Activity 
+} from "lucide-react"
 
-interface SuccessPosition extends GeolocationPosition {
-}
-
-interface GeolocationError extends GeolocationPositionError {
+interface BusPosition {
+    lat: number
+    lng: number
+    accuracy: number
+    timestamp: number
 }
 
 const DriverPage = () => {
@@ -41,7 +51,8 @@ const DriverPage = () => {
 
         try {
             if (typeof navigator === "undefined" || !navigator.geolocation) {
-                console.log("Navigation is not supported by your browser")
+                toast.error("Geolocation is not supported by your browser")
+                setLoading(false)
                 return
             }
 
@@ -134,9 +145,43 @@ const DriverPage = () => {
                     <p>Accuracy: {position.accuracy} meters</p>
                     <p>Timestamp: {new Date(position.timestamp).toLocaleString()}</p>
                 </div>
-            ) : (
-                <p>You are not currently on a trip.</p>
-            )}
+
+                {/* LOCATION STATS */}
+                {started && position && (
+                    <div className="grid grid-cols-2 gap-4 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <StatCard icon={<MapPin className="text-blue-500" size={18} />} label="Latitude" value={position.lat.toFixed(6)} />
+                        <StatCard icon={<MapPin className="text-blue-500" size={18} />} label="Longitude" value={position.lng.toFixed(6)} />
+                        <StatCard icon={<ShieldCheck className="text-emerald-500" size={18} />} label="Accuracy" value={`${position.accuracy} m`} />
+                        <StatCard icon={<Clock className="text-orange-500" size={18} />} label="Last Update" value={new Date(position.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} />
+                    </div>
+                )}
+
+                {!started && !loading && (
+                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
+                        <Navigation size={40} className="mb-2 opacity-20" />
+                        <p className="text-sm">No active tracking data</p>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="flex justify-center items-center py-4 gap-3 text-indigo-600">
+                        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="font-medium">Initializing GPS...</span>
+                    </div>
+                )}
+            </main>
+        </div>
+    )
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
+    return (
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-start">
+            <div className="flex items-center gap-2 mb-2">
+                {icon}
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
+            </div>
+            <p className="text-lg font-bold text-slate-800 tracking-tight">{value}</p>
         </div>
     )
 }

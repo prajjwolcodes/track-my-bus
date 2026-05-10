@@ -1,9 +1,24 @@
 "use client"
 
-import { RecaptchaVerifier, signInWithCustomToken, signInWithEmailAndPassword, signInWithPhoneNumber } from "firebase/auth"
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore"
-import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+import {
+    RecaptchaVerifier,
+    signInWithCustomToken,
+    signInWithEmailAndPassword,
+    signInWithPhoneNumber,
+} from "firebase/auth"
+
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    where,
+} from "firebase/firestore"
 
 import { auth, db } from "@/firebase/firebase"
 
@@ -11,35 +26,48 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
+import { hashMPIN } from "@/lib/hashMpin"
+
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { hashMPIN } from "@/lib/hashMpin"
-import { Loader2 } from "lucide-react"
-import MPINComponent from "./MpinComponent"
+    Loader2,
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    HeadphonesIcon,
+    Phone,
+} from "lucide-react"
+
+import { Libre_Baskerville, Nunito } from "next/font/google"
+
+const libreBaskerville = Libre_Baskerville({
+    subsets: ["latin"],
+    weight: ["400", "700"],
+})
+
+const nunito = Nunito({
+    subsets: ["latin"],
+    weight: ["400", "600", "700"],
+})
+
 
 const schoolSchema = z.object({
     role: z.literal("school"),
     email: z.string().email("Invalid email"),
-    password: z.string(),
-
+    password: z.string().min(6, "Password required"),
 })
 
 const phoneSchema = z.object({
     role: z.enum(["driver", "parent"]),
     phone: z
         .string()
-        .min(10, "Phone must be at least 10 digits")
-        .regex(/^\d+$/, "Phone must be numeric"),
-
+        .min(10, "10 digits required")
+        .regex(/^\d+$/, "Numeric only"),
 })
 
 const formSchema = z.discriminatedUnion("role", [
@@ -49,225 +77,219 @@ const formSchema = z.discriminatedUnion("role", [
 
 type FormValues = z.infer<typeof formSchema>
 
+
 export default function AuthForm() {
     const router = useRouter()
+
     const [loading, setLoading] = useState(false)
-    const [step, setStep] = useState<"form" | "otp" | "mpin" | "mpin-setup">("form")
-    const [schools, setSchools] = useState<any[]>([])
+
+    const [step, setStep] = useState<
+        "form" | "otp" | "mpin"
+    >("form")
+
+    const [showPassword, setShowPassword] =
+        useState(false)
+
+    const [mpin, setMpin] = useState([
+        "",
+        "",
+        "",
+        "",
+    ])
+
     const userDataRef = useRef<any>(null)
-    const [selectedSchoolId, setSelectedSchoolId] = useState("")
-    const [confirmationResult, setConfirmationResult] = useState<any>(null)
-    const [otp, setOtp] = useState("")
-    const [mpin, setMpin] = useState("")
+
+    const [confirmationResult, setConfirmationResult] =
+        useState<any>(null)
 
     const {
         register,
         handleSubmit,
         watch,
         setValue,
-        formState: { errors },
     } = useForm<FormValues>({
         resolver: zodResolver(formSchema),
+
         defaultValues: {
-            role: "school",
+            role: "school" as any,
         },
     })
 
     const role = watch("role")
 
-    // Fetch schools once on mount, not on every role change
+
     useEffect(() => {
         async function fetchSchools() {
             try {
-                const schoolsSnapshot = await getDocs(collection(db, "schools"))
-                const schoolsData = schoolsSnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }))
-                setSchools(schoolsData)
+                await getDocs(collection(db, "schools"))
             } catch (err) {
-                console.error("Error fetching schools:", err)
+                console.error(err)
             }
         }
+
         fetchSchools()
     }, [])
+
+
+    const handleMpinChange = (
+        value: string,
+        index: number
+    ) => {
+        if (isNaN(Number(value))) return
+
+        const newMpin = [...mpin]
+
+        newMpin[index] = value.slice(-1)
+
+        setMpin(newMpin)
+
+        if (value && index < 3) {
+            const nextInput = document.getElementById(
+                `mpin-${index + 1}`
+            )
+
+            nextInput?.focus()
+        }
+    }
+
 
     const onSubmit = async (data: FormValues) => {
         setLoading(true)
 
         try {
-            // SCHOOL LOGIN
+            /* SCHOOL LOGIN */
             if (data.role === "school") {
-                const userCredential = await signInWithEmailAndPassword(auth, data.email.trim(), data.password)
-                const userDoc = await getDoc(doc(db, "schools", userCredential.user.uid))
+                const cred =
+                    await signInWithEmailAndPassword(
+                        auth,
+                        data.email,
+                        data.password
+                    )
+
+                const userDoc = await getDoc(
+                    doc(db, "schools", cred.user.uid)
+                )
 
                 if (!userDoc.exists()) {
-                    alert("User data not found in schools collection")
-                    return
+                    throw new Error("School not found")
                 }
+
                 await fetch("/api/session/set-cookie", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: await userCredential.user.getIdToken(), role: "school" }),
+                    body: JSON.stringify({
+                        token:
+                            await cred.user.getIdToken(),
+                        role: "school",
+                    }),
                 })
+
                 router.push("/school")
+
                 return
             }
 
-            // DRIVER/PARENT LOGIN
-            if (!selectedSchoolId) {
-                alert("Please select school")
+            const q =
+                data.role === "driver"
+                    ? query(
+                        collection(db, "drivers"),
+                        where("phone", "==", data.phone)
+                    )
+                    : query(
+                        collection(db, "students"),
+                        where(
+                            "parentPhone",
+                            "==",
+                            data.phone
+                        )
+                    )
+
+            const snap = await getDocs(q)
+
+            if (snap.empty) {
+                alert(
+                    "Account not found. Please contact school admin."
+                )
+
                 return
             }
 
-            const q = data.role === "driver" ?
-                query(collection(db, "drivers"), where("schoolId", "==", selectedSchoolId), where("phone", "==", data.phone))
-                :
-                query(collection(db, "students"), where("schoolId", "==", selectedSchoolId), where("parentPhone", "==", data.phone))
-
-            const querySnapshot = await getDocs(q)
-
-            if (querySnapshot.empty) {
-                alert(`No ${data.role} found with this phone number in the selected school`)
-                return
+            userDataRef.current = {
+                ...snap.docs[0].data(),
+                id: snap.docs[0].id,
             }
-            userDataRef.current = querySnapshot.docs[0].data()
-            userDataRef.current.id = querySnapshot.docs[0].id
 
             if (!userDataRef.current.mpin) {
                 setupRecaptcha()
-                const appVerifier = (window as any).recaptchaVerifier
-                const formattedPhone = `+977${data.phone}`
 
-                try {
-                    const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier)
-                    setConfirmationResult(confirmation)
-                    setStep("otp")
-                    alert("OTP sent successfully")
-                } catch (err) {
-                    console.error("OTP Error:", err)
-                    alert("Failed to send OTP")
+                const confirm =
+                    await signInWithPhoneNumber(
+                        auth,
+                        `+977${data.phone}`,
+                        (window as any)
+                            .recaptchaVerifier
+                    )
+
+                setConfirmationResult(confirm)
+
+                setStep("otp")
+            } else {
+                setStep("mpin")
+            }
+        } catch (err: any) {
+            alert(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+
+    const handleMPINLogin = async () => {
+        const mpinString = mpin.join("")
+
+        if (mpinString.length < 4) return
+
+        setLoading(true)
+
+        try {
+            const mpinHash =
+                await hashMPIN(mpinString)
+
+            if (mpinHash !== userDataRef.current.mpin)
+                throw new Error("Invalid MPIN")
+
+            const res = await fetch(
+                "/api/session/mpin-login",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        uid: userDataRef.current.id,
+                        role,
+                    }),
                 }
-                return
-            }
+            )
 
-            setStep("mpin")
-        } catch (error: any) {
-            console.error(error)
-            alert(error.code || "Something went wrong")
-        } finally {
-            setLoading(false)
-        }
-    }
+            const { token } = await res.json()
 
-    const handleMPINLogin = async (mpin: string) => {
-        if (!mpin || mpin.length < 4) {
-            alert("Please enter a valid MPIN")
-            return
-        }
+            await signInWithCustomToken(auth, token)
 
-        setLoading(true)
+            const idToken =
+                await auth.currentUser?.getIdToken()
 
-        try {
-            if (!userDataRef.current?.mpin) {
-                alert("MPIN not set. Please verify OTP first.")
-                return
-            }
-
-            const mpinHash = await hashMPIN(mpin)
-
-            if (mpinHash !== userDataRef.current.mpin) {
-                alert("Invalid MPIN")
-                return
-            }
-
-            // 🔹 Generate token from server
-            const res = await fetch("/api/session/mpin-login", {
+            await fetch("/api/session/set-cookie", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    uid: userDataRef.current.id,
-                    role
+                    token: idToken,
+                    role,
                 }),
             })
 
-            const data = await res.json()
-
-            const token = data.token
-
-            // 🔹 Sign in to Firebase
-            await signInWithCustomToken(auth, token)
-
-            // 🔹 Get ID token
-            const idToken = await auth.currentUser?.getIdToken()
-
-            // 🔹 Send cookie to server
-            await fetch("/api/session/set-cookie", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: idToken, role }),
-            })
-
-            router.push(role === "driver" ? "/driver" : "/parent")
-
-        } catch (error) {
-            console.error(error)
-            alert("Login failed")
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const saveMPIN = async () => {
-        if (!userDataRef.current?.id) {
-            alert("User not found")
-            return
-        }
-
-        if (!mpin || mpin.length < 4) {
-            alert("Please enter a valid MPIN")
-            return
-        }
-
-        setLoading(true)
-        try {
-            const mpinHash = await hashMPIN(mpin)
-            const isDriver = !!userDataRef.current.driverId
-
-            const userRef = doc(db, isDriver ? "drivers" : "students", userDataRef.current.id)
-            await updateDoc(userRef, { mpin: mpinHash })
-
-            alert("MPIN set successfully")
-            const res = await fetch("/api/session/mpin-login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    uid: userDataRef.current.id,
-                    role
-                }),
-            })
-
-            const data = await res.json()
-
-            const token = data.token
-
-            // 🔹 Sign in to Firebase
-            await signInWithCustomToken(auth, token)
-
-            // 🔹 Get ID token
-            const idToken = await auth.currentUser?.getIdToken()
-
-            // 🔹 Send cookie to server
-            await fetch("/api/session/set-cookie", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: idToken, role }),
-            })
-
-            router.push(role === "driver" ? "/driver" : "/parent")
-        } catch (error) {
-            console.error(error)
-            alert("Failed to save MPIN")
+            router.push(
+                role === "driver"
+                    ? "/driver"
+                    : "/parent"
+            )
+        } catch (err: any) {
+            alert(err.message)
         } finally {
             setLoading(false)
         }
@@ -276,191 +298,365 @@ export default function AuthForm() {
 
     const setupRecaptcha = () => {
         if (!(window as any).recaptchaVerifier) {
-            (window as any).recaptchaVerifier = new RecaptchaVerifier(
-                auth,
-                "recaptcha-container",
-                {
-                    size: "invisible",
-                    callback: () => {
-                        console.log("reCAPTCHA solved")
-                    },
-                }
-            )
-        }
-    }
-
-    const verifyOTP = async () => {
-        if (!confirmationResult) {
-            alert("Please request OTP again")
-            return
-        }
-
-        if (!otp || otp.length < 4) {
-            alert("Please enter a valid OTP")
-            return
-        }
-
-        setLoading(true)
-        try {
-            const result = await confirmationResult.confirm(otp)
-
-            console.log("OTP verified", result.user)
-
-            setStep("mpin-setup") // move to MPIN setup
-        } catch (error) {
-            alert("Invalid OTP")
-        } finally {
-            setLoading(false)
+            ; (window as any).recaptchaVerifier =
+                new RecaptchaVerifier(
+                    auth,
+                    "recaptcha-container",
+                    {
+                        size: "invisible",
+                    }
+                )
         }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+        <div className="min-h-screen bg-[#F5F7FB] flex items-center justify-center px-4 py-6">
+
             <div id="recaptcha-container"></div>
 
-            <Card className="w-full max-w-lg shadow-xl rounded-2xl">
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center font-semibold">
-                        Login
-                    </CardTitle>
-                </CardHeader>
+            <div className="w-full max-w-4xl bg-white rounded-[34px] overflow-hidden shadow-[0_25px_90px_rgba(0,0,0,0.08)] grid lg:grid-cols-2">
 
-                <CardContent>
-                    {step === "form" && (
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full">
+                <div className="relative hidden lg:block min-h-full">
 
-                            {/* Role */}
-                            <div className="space-y-2">
-                                <Label>Login As</Label>
-                                <Select
-                                    defaultValue="school"
-                                    onValueChange={(value) =>
-                                        setValue("role", value as any)
-                                    }
+                    <img
+                        src="/bus.png"
+                        alt="SmartYatra"
+                        className="absolute inset-0 h-full w-full object-cover"
+                    />
+
+                    <div className="absolute inset-0 bg-linear-to-br from-[#001B44]/80 via-[#003B80]/75 to-[#00152f]/80" />
+
+                    <div className="relative z-10 flex h-full flex-col justify-between p-10">
+
+                        <div>
+                            <h1
+                                className={`text-4xl text-white leading-tight font-bold mb-4 ${libreBaskerville.className}`}
+                            >
+                                SmartYatra
+                            </h1>
+
+                            <p
+                                className={`${nunito.className} text-white/90 leading-relaxed max-w-md text-base`}
+                            >
+                                SmartYatra combines realtime school bus tracking, driver coordination, and parent notifications into one seamless platform
+                                focused on safety, efficiency, and better transportation management.
+                            </p>
+                        </div>
+
+                        <div
+                            className={`${nunito.className} flex items-center justify-between text-xs text-white/70`}
+                        >
+                            <span>
+                                © 2026 SmartYatra
+                            </span>
+
+                            <span>
+                                Secure Access
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT FORM PANEL */}
+                <div className="flex items-center justify-center px-6 py-8 md:px-12 md:py-10">
+
+                    <div className="w-full max-w-md">
+                        {/* TITLE */}
+                        <div className="mb-8">
+
+                            <h2
+                                className={`${libreBaskerville.className} text-4xl text-[#002D72] mb-2`}
+                            >
+                                Welcome Back!
+                            </h2>
+
+                            <p
+                                className={`${nunito.className} text-gray-500 text-sm`}
+                            >
+                                Login to continue your
+                                SmartYatra experience.
+                            </p>
+                        </div>
+
+                        {/* ROLE SWITCHER */}
+                        <div className="bg-[#F4F6FA] rounded-2xl p-1 flex mb-8">
+
+                            {[
+                                {
+                                    label: "School",
+                                    value: "school",
+                                },
+                                {
+                                    label: "Parent",
+                                    value: "parent",
+                                },
+                                {
+                                    label: "Driver",
+                                    value: "driver",
+                                },
+                            ].map((r) => (
+                                <button
+                                    key={r.value}
+                                    onClick={() => {
+                                        setValue(
+                                            "role",
+                                            r.value as any
+                                        )
+
+                                        setStep("form")
+                                    }}
+                                    className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-all ${role === r.value
+                                            ? "bg-[#0041A3] text-white shadow-md"
+                                            : "text-gray-500"
+                                        }`}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="school">School</SelectItem>
-                                        <SelectItem value="driver">Driver</SelectItem>
-                                        <SelectItem value="parent">Parent</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                    {r.label}
+                                </button>
+                            ))}
+                        </div>
 
-                            {role !== "school" && (
-                                <div className="space-y-2 w-full">
-                                    <Select
-                                        value={selectedSchoolId}
-                                        onValueChange={(value) => setSelectedSchoolId(value)}
+                        {step === "form" && (
+                            <form
+                                onSubmit={handleSubmit(
+                                    onSubmit
+                                )}
+                                className="space-y-5"
+                            >
+
+                                {/* SCHOOL */}
+                                {role === "school" ? (
+                                    <>
+                                        {/* EMAIL */}
+                                        <div className="space-y-2">
+
+                                            <Label className="text-xs font-semibold text-gray-700">
+                                                Email Address
+                                            </Label>
+
+                                            <div className="relative">
+
+                                                <Mail
+                                                    size={18}
+                                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                                />
+
+                                                <Input
+                                                    {...register(
+                                                        "email"
+                                                    )}
+                                                    placeholder="Enter email address"
+                                                    className="h-12 rounded-xl border-gray-200 bg-[#FAFAFA] pl-12 focus-visible:ring-2 focus-visible:ring-[#0041A3]"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* PASSWORD */}
+                                        <div className="space-y-2">
+
+                                            <Label className="text-xs font-semibold text-gray-700">
+                                                Password
+                                            </Label>
+
+                                            <div className="relative">
+
+                                                <Lock
+                                                    size={18}
+                                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                                />
+
+                                                <Input
+                                                    {...register(
+                                                        "password"
+                                                    )}
+                                                    type={
+                                                        showPassword
+                                                            ? "text"
+                                                            : "password"
+                                                    }
+                                                    placeholder="••••••••"
+                                                    className="h-12 rounded-xl border-gray-200 bg-[#FAFAFA] pl-12 pr-12 focus-visible:ring-2 focus-visible:ring-[#0041A3]"
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setShowPassword(
+                                                            !showPassword
+                                                        )
+                                                    }
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff
+                                                            size={
+                                                                18
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <Eye
+                                                            size={
+                                                                18
+                                                            }
+                                                        />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    /* PHONE LOGIN */
+                                    <div className="space-y-2">
+
+                                        <Label className="text-xs font-semibold text-gray-700">
+                                            Phone Number
+                                        </Label>
+
+                                        <div className="relative">
+
+                                            <Phone
+                                                size={18}
+                                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                            />
+
+                                            <div className="absolute left-11 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">
+                                                +977
+                                            </div>
+
+                                            <Input
+                                                {...register(
+                                                    "phone" as any
+                                                )}
+                                                placeholder="98XXXXXXXX"
+                                                className="h-12 rounded-xl border-gray-200 bg-[#FAFAFA] pl-20 focus-visible:ring-2 focus-visible:ring-[#0041A3]"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* REMEMBER */}
+                                <div className="flex items-center justify-between pt-1">
+
+                                    <div className="flex items-center gap-2">
+
+                                        <Checkbox id="remember" />
+
+                                        <label
+                                            htmlFor="remember"
+                                            className="text-xs text-gray-500 cursor-pointer"
+                                        >
+                                            Remember me
+                                        </label>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="text-xs font-semibold text-[#0041A3]"
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select School" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {schools.map((school) => (
-                                                <SelectItem key={school.schoolId} value={school.schoolId}>
-                                                    {school.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        Need Help?
+                                    </button>
                                 </div>
-                            )}
 
-                            {/* School Fields */}
-                            {role === "school" && (
-                                <>
-                                    <div className="space-y-2">
-                                        <Label>Email</Label>
-                                        <Input {...register("email")} />
+                                {/* BUTTON */}
+                                <Button className="w-full h-12 rounded-xl bg-[#0041A3] hover:bg-[#003482] text-white font-semibold shadow-lg shadow-blue-900/20 transition-all">
 
-                                    </div>
+                                    {loading ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        "Secure Login"
+                                    )}
+                                </Button>
+                            </form>
+                        )}
 
-                                    <div className="space-y-2">
-                                        <Label>Password</Label>
-                                        <Input type="password" {...register("password")} />
+                        {/* MPIN */}
+                        {step === "mpin" && (
+                            <div className="space-y-7">
 
-                                    </div>
-                                </>
-                            )}
+                                <div>
 
-                            {/* Phone */}
-                            {(role === "driver" || role === "parent") && (
-                                <div className="space-y-2">
-                                    <Label>Phone</Label>
-                                    <Input {...register("phone")} />
+                                    <h3 className="text-lg font-semibold text-[#002D72] mb-2">
+                                        Enter mPIN
+                                    </h3>
 
+                                    <p className="text-sm text-gray-500">
+                                        Enter your secure 4-digit
+                                        mPIN to continue.
+                                    </p>
                                 </div>
-                            )}
 
-                            <Button
-                                type="submit"
-                                className="w-full rounded-xl"
-                                disabled={loading}
-                            >
-                                {loading && (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                )}
-                                Continue
-                            </Button>
-                        </form>
-                    )}
+                                <div className="flex gap-4">
 
-                    {/* OTP STEP */}
-                    {step === "otp" && (
-                        <div className="space-y-4">
-                            <Label>Enter OTP</Label>
-                            <Input
-                                placeholder="Enter OTP"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                            />
-                            <Button
-                                className="w-full rounded-xl"
-                                onClick={verifyOTP}
-                                disabled={loading}
-                            >
-                                {loading && (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                )}
-                                Verify OTP
-                            </Button>
+                                    {[0, 1, 2, 3].map((i) => (
+                                        <input
+                                            key={i}
+                                            id={`mpin-${i}`}
+                                            type="password"
+                                            maxLength={1}
+                                            value={mpin[i]}
+                                            onChange={(e) =>
+                                                handleMpinChange(
+                                                    e.target
+                                                        .value,
+                                                    i
+                                                )
+                                            }
+                                            className="w-full aspect-square rounded-2xl border border-gray-200 bg-[#F7F7F7] text-center text-2xl font-bold focus:ring-2 focus:ring-[#0041A3]"
+                                        />
+                                    ))}
+                                </div>
+
+                                <Button
+                                    onClick={
+                                        handleMPINLogin
+                                    }
+                                    className="w-full h-12 rounded-xl bg-[#0041A3]"
+                                >
+                                    {loading ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        "Verify & Login"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* FOOTER */}
+                        <div className="mt-10 text-center">
+
+                            <p className="text-sm text-gray-500">
+
+                                Don&apos;t have access?{" "}
+
+                                <Link
+                                    href="/#contact"
+                                    className="font-semibold text-[#0041A3] hover:underline"
+                                >
+                                    Contact School Admin
+                                </Link>
+                            </p>
+
+                            <div className="mt-8 flex items-center justify-center gap-4 text-[11px] text-gray-400">
+
+                                <Link
+                                    href="/signin"
+                                    className="hover:text-gray-600"
+                                >
+                                    Privacy Policy
+                                </Link>
+
+                                <span>•</span>
+
+                                <Link
+                                    href="/signin"
+                                    className="hover:text-gray-600"
+                                >
+                                    Terms of Service
+                                </Link>
+                            </div>
                         </div>
-                    )}
-
-                    {/* MPIN SETUP STEP */}
-                    {step === "mpin-setup" && (
-                        <div className="space-y-4">
-                            <Label>Create new MPIN</Label>
-                            <Input
-                                type="password"
-                                placeholder="Enter MPIN"
-                                value={mpin}
-                                onChange={(e) => setMpin(e.target.value)}
-                            />
-                            <Button
-                                className="w-full rounded-xl"
-                                onClick={saveMPIN}
-                                disabled={loading}
-                            >
-                                {loading && (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                )}
-                                Save MPIN
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* MPIN STEP */}
-                    {step === "mpin" && (
-                        <MPINComponent onSubmit={handleMPINLogin} loading={loading} />
-                    )}
-                </CardContent>
-            </Card>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
-
-// MPIN COMPONENT

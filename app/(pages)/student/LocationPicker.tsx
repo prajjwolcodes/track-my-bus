@@ -85,7 +85,7 @@ const LocationPicker = ({
             <button
                 type="button"
                 onClick={() => setShowMap(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                className="w-36 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg"
             >
                 Select Position
             </button>
