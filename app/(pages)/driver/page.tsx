@@ -126,6 +126,7 @@ const DriverPage = () => {
 
     return (
         <div className="flex flex-col gap-4 text-center">DriverPage
+        <main className="flex flex-col gap-6">
 
             <LogoutButton />
 
@@ -145,6 +146,10 @@ const DriverPage = () => {
                     <p>Accuracy: {position.accuracy} meters</p>
                     <p>Timestamp: {new Date(position.timestamp).toLocaleString()}</p>
                 </div>
+            ): (
+                <p>No active trip</p>
+            )
+            }
 
                 {/* LOCATION STATS */}
                 {started && position && (

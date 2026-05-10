@@ -82,6 +82,10 @@ export default function AuthForm() {
     const router = useRouter()
 
     const [loading, setLoading] = useState(false)
+    const [otp, setOtp] = useState("")
+    const [otpError, setOtpError] = useState("")
+    const [successMessage, setSuccessMessage] = useState("")
+    const [isFirstTimeUser, setIsFirstTimeUser] = useState(false)
 
     const [step, setStep] = useState<
         "form" | "otp" | "mpin"
@@ -231,8 +235,22 @@ export default function AuthForm() {
 
                 setConfirmationResult(confirm)
 
+                setIsFirstTimeUser(true)
+
+                setOtp("")
+                setOtpError("")
+                setSuccessMessage("")
+                setMpin(["", "", "", ""])
+
                 setStep("otp")
             } else {
+                setIsFirstTimeUser(false)
+
+                setOtp("")
+                setOtpError("")
+                setSuccessMessage("")
+                setMpin(["", "", "", ""])
+
                 setStep("mpin")
             }
         } catch (err: any) {
@@ -251,6 +269,69 @@ export default function AuthForm() {
         setLoading(true)
 
         try {
+            /* FIRST TIME MPIN SET */
+            if (isFirstTimeUser) {
+                const mpinHash =
+                    await hashMPIN(mpinString)
+
+                await fetch("/api/session/set-mpin", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        uid: userDataRef.current.id,
+                        role,
+                        mpin: mpinHash,
+                    }),
+                })
+
+                setSuccessMessage(
+                    "mPIN set successfully"
+                )
+
+                const res = await fetch(
+                    "/api/session/mpin-login",
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            uid: userDataRef.current.id,
+                            role,
+                        }),
+                    }
+                )
+
+                const { token } = await res.json()
+
+                await signInWithCustomToken(
+                    auth,
+                    token
+                )
+
+                const idToken =
+                    await auth.currentUser?.getIdToken()
+
+                await fetch("/api/session/set-cookie", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        token: idToken,
+                        role,
+                    }),
+                })
+
+                setTimeout(() => {
+                    router.push(
+                        role === "driver"
+                            ? "/driver"
+                            : "/parent"
+                    )
+                }, 1200)
+
+                return
+            }
+
+            /* NORMAL LOGIN */
             const mpinHash =
                 await hashMPIN(mpinString)
 
@@ -295,20 +376,41 @@ export default function AuthForm() {
         }
     }
 
+    const verifyOTP = async () => {
+        if (!otp || otp.length < 6) {
+            setOtpError("Please enter valid OTP")
+            return
+        }
 
-    const setupRecaptcha = () => {
-        if (!(window as any).recaptchaVerifier) {
-            ; (window as any).recaptchaVerifier =
-                new RecaptchaVerifier(
-                    auth,
-                    "recaptcha-container",
-                    {
-                        size: "invisible",
-                    }
-                )
+        setLoading(true)
+
+        try {
+            await confirmationResult.confirm(otp)
+            await auth.signOut()
+            setOtpError("")
+
+            setStep("mpin")
+        } catch (err) {
+            setOtpError("OTP is not valid")
+        } finally {
+            setLoading(false)
         }
     }
 
+    const setupRecaptcha = () => {
+    if (typeof window === "undefined") return
+
+    if (!(window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier =
+            new RecaptchaVerifier(auth, "recaptcha-container", {
+                size: "invisible",
+                callback: () => {
+                },
+            })
+
+        ;(window as any).recaptchaVerifier.render()
+    }
+}
     return (
         <div className="min-h-screen bg-[#F5F7FB] flex items-center justify-center px-4 py-6">
 
@@ -406,8 +508,8 @@ export default function AuthForm() {
                                         setStep("form")
                                     }}
                                     className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-all ${role === r.value
-                                            ? "bg-[#0041A3] text-white shadow-md"
-                                            : "text-gray-500"
+                                        ? "bg-[#0041A3] text-white shadow-md"
+                                        : "text-gray-500"
                                         }`}
                                 >
                                     {r.label}
@@ -568,6 +670,59 @@ export default function AuthForm() {
                             </form>
                         )}
 
+
+                        {/* OTP STEP */}
+                        {step === "otp" && (
+                            <div className="space-y-6">
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-[#002D72] mb-2">
+                                        Verify OTP
+                                    </h3>
+
+                                    <p className="text-sm text-gray-500">
+                                        Enter the OTP sent to your
+                                        phone number.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+
+                                    <Label className="text-xs font-semibold text-gray-700">
+                                        OTP Code
+                                    </Label>
+
+                                    <Input
+                                        value={otp}
+                                        onChange={(e) =>
+                                            setOtp(e.target.value)
+                                        }
+                                        placeholder="Enter 6-digit OTP"
+                                        className="h-12 rounded-xl border-gray-200 bg-[#FAFAFA] focus-visible:ring-2 focus-visible:ring-[#0041A3]"
+                                    />
+
+                                    {otpError && (
+                                        <p className="text-sm text-red-500">
+                                            {otpError}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <Button
+                                    disabled={loading}
+                                    onClick={verifyOTP}
+                                    className="w-full h-12 rounded-xl bg-[#0041A3]"
+                                >
+                                    {loading ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        "Verify OTP"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+
                         {/* MPIN */}
                         {step === "mpin" && (
                             <div className="space-y-7">
@@ -575,12 +730,15 @@ export default function AuthForm() {
                                 <div>
 
                                     <h3 className="text-lg font-semibold text-[#002D72] mb-2">
-                                        Enter mPIN
+                                        {isFirstTimeUser
+                                            ? "Set New mPIN"
+                                            : "Enter mPIN"}
                                     </h3>
 
                                     <p className="text-sm text-gray-500">
-                                        Enter your secure 4-digit
-                                        mPIN to continue.
+                                        {isFirstTimeUser
+                                            ? "Create a secure 4-digit mPIN for future logins."
+                                            : "Enter your secure 4-digit mPIN to continue."}
                                     </p>
                                 </div>
 
@@ -604,11 +762,15 @@ export default function AuthForm() {
                                         />
                                     ))}
                                 </div>
+                                {successMessage && (
+                                    <p className="text-sm text-green-600 font-medium">
+                                        {successMessage}
+                                    </p>
+                                )}
 
                                 <Button
-                                    onClick={
-                                        handleMPINLogin
-                                    }
+                                    disabled={loading}
+                                    onClick={handleMPINLogin}
                                     className="w-full h-12 rounded-xl bg-[#0041A3]"
                                 >
                                     {loading ? (
@@ -624,15 +786,23 @@ export default function AuthForm() {
                         <div className="mt-10 text-center">
 
                             <p className="text-sm text-gray-500">
-
                                 Don&apos;t have access?{" "}
 
-                                <Link
-                                    href="/#contact"
-                                    className="font-semibold text-[#0041A3] hover:underline"
-                                >
-                                    Contact School Admin
-                                </Link>
+                                {role === "school" ? (
+                                    <Link
+                                        href="/signup"
+                                        className="font-semibold text-[#0041A3] hover:underline"
+                                    >
+                                        Sign Up
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href="/#contact"
+                                        className="font-semibold text-[#0041A3] hover:underline"
+                                    >
+                                        Contact School Admin
+                                    </Link>
+                                )}
                             </p>
 
                             <div className="mt-8 flex items-center justify-center gap-4 text-[11px] text-gray-400">
