@@ -2,6 +2,8 @@
 
 import type { Icon, Map } from "leaflet";
 import type { LeafletEventHandlerFnMap } from "leaflet";
+import { haversineDistanceMeters } from "@/lib/haversine";
+import { MapPin, Ruler } from "lucide-react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { useEffect, type MutableRefObject } from "react";
 
@@ -74,6 +76,23 @@ export default function DriverMap({
 
                 {studentPickupMarkers.map((student) => {
                     const pickup = student.pickupLocation;
+                    const busLat = displayPosition?.lat;
+                    const busLng = displayPosition?.lng;
+                    const hasBusLocation =
+                        typeof busLat === "number" &&
+                        Number.isFinite(busLat) &&
+                        typeof busLng === "number" &&
+                        Number.isFinite(busLng);
+                    const distanceMeters = hasBusLocation
+                        ? haversineDistanceMeters({ lat: busLat, lng: busLng }, pickup)
+                        : null;
+                    const distanceLabel =
+                        typeof distanceMeters === "number" && Number.isFinite(distanceMeters)
+                            ? distanceMeters >= 1000
+                                ? `${(distanceMeters / 1000).toFixed(2)} km`
+                                : `${Math.round(distanceMeters)} m`
+                            : "--";
+
                     const markerEventHandlers: LeafletEventHandlerFnMap = {
                         mouseover: (event) => {
                             event.target.openPopup();
@@ -90,31 +109,61 @@ export default function DriverMap({
                             eventHandlers={markerEventHandlers}
                         >
                             <Popup closeButton={false} autoClose={false} closeOnClick={false}>
-                                <div className="min-w-45 rounded-xl bg-white p-3 shadow-lg">
+                                <div className="">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-14 w-14 overflow-hidden rounded-full bg-slate-100 ring-2 ring-blue-100">
+                                        <div className="size-12 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-2 ring-blue-100">
                                             {student.photo ? (
                                                 <img
                                                     src={student.photo}
                                                     alt={student.name ?? "Student photo"}
                                                     className="h-full w-full object-cover"
+                                                    loading="lazy"
                                                 />
                                             ) : (
-                                                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-500">
-                                                    {student.name?.[0]?.toUpperCase() ?? "S"}
+                                                <div className="flex h-full w-full items-center justify-center bg-blue-600 text-sm font-bold text-white">
+                                                    {(student.name?.[0] ?? "S").toUpperCase()}
                                                 </div>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-900">
+
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[15px] font-semibold text-slate-900">
                                                 {student.name ?? "Student"}
                                             </p>
-                                            <p className="text-xs text-slate-500">Pickup location</p>
-                                            <p className="mt-1 text-xs text-slate-600">
-                                                {pickup.lat.toFixed(5)}, {pickup.lng.toFixed(5)}
-                                            </p>
+                                        </div>
+
+                                        <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                                            Pickup
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-2">
+                                        <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                                            <div className="flex items-center gap-2 text-[12px] font-medium text-slate-700">
+                                                <MapPin size={14} className="text-slate-500" />
+                                                Pickup coords
+                                            </div>
+                                            <div className="text-[12px] font-semibold text-slate-800">
+                                                <span className="font-mono">{pickup.lat.toFixed(5)}</span>
+                                                <span className="mx-1 text-slate-400">,</span>
+                                                <span className="font-mono">{pickup.lng.toFixed(5)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                                            <div className="flex items-center gap-2 text-[12px] font-medium text-slate-700">
+                                                <Ruler size={14} className="text-slate-500" />
+                                                Distance to bus
+                                            </div>
+                                            <div className="text-[12px] font-semibold text-slate-800">{distanceLabel}</div>
                                         </div>
                                     </div>
+
+                                    {!hasBusLocation ? (
+                                        <p className="mt-2 text-[11px] text-slate-400">
+                                            Bus location not available yet.
+                                        </p>
+                                    ) : null}
                                 </div>
                             </Popup>
                         </Marker>
