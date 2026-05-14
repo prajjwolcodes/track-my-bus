@@ -1,7 +1,7 @@
 "use client";
 
 import type { BusLocationPayload } from "@/firebase/rtdb";
-import type { Icon, Map, Marker as LeafletMarker } from "leaflet";
+import type { Icon, Map, Marker as LeafletMarker, DivIcon } from "leaflet";
 import type { MutableRefObject } from "react";
 import { useEffect } from "react";
 import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
@@ -9,7 +9,7 @@ import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from "react-le
 type ParentMapClientProps = {
     mapRef: MutableRefObject<Map | null>;
     markerRef: MutableRefObject<LeafletMarker | null>;
-    markerIcon: Icon | null;
+    markerIcon: Icon | null | DivIcon;
     isTripActive: boolean;
     hasLocation: boolean;
     position: BusLocationPayload | null;

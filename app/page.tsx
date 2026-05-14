@@ -5,6 +5,7 @@ import HowItWorks from "./landingpage/components/HowItWorks";
 import FAQ from "./landingpage/components/FAQ";
 import Contact from "./landingpage/components/Contact";
 import Footer from "./landingpage/components/Footer";
+import MPINComponent from "./(pages)/signin/MpinComponent";
 
 export default function Home() {
   return (

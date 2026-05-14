@@ -51,6 +51,12 @@ messaging.onBackgroundMessage(async (payload) => {
     await self.registration.showNotification(closedTitle, {
         body: closedBody,
         icon,
+        badge: "/badge-icon.svg",
+        tag: "bus-notification",
+        requireInteraction: true,
+        silent: false,
+        timestamp: Date.now(),
+        vibrate: [200, 100, 200],
     });
 });
 

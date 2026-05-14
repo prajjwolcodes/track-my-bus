@@ -7,6 +7,9 @@ import { haversineDistanceMeters } from "@/lib/haversine";
 import { cn } from "@/lib/utils";
 import { doc, getDoc } from "firebase/firestore";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactDOMServer from "react-dom/server";
+import { TbBusFilled } from "react-icons/tb";
+
 import {
     Dialog,
     DialogClose,
@@ -22,10 +25,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import type { Icon, Map as MAP } from "leaflet";
+import type { Icon, DivIcon, Map as MAP } from "leaflet";
 import {
     AlertCircle,
     Bus,
+    BusFront,
     BusFrontIcon,
     Calendar,
     ChevronRight,
@@ -246,11 +250,11 @@ const DriverPage = () => {
     const [started, setStarted] = useState(false);
     const [trackingPhase, setTrackingPhase] = useState<"idle" | "locating" | "tracking">("idle");
     const [error, setError] = useState<string | null>(null);
-    const [markerIcon, setMarkerIcon] = useState<Icon | null>(null);
+    const [markerIcon, setMarkerIcon] = useState<Icon<any> | DivIcon | null>(null);
     const [displayPosition, setDisplayPosition] = useState<Position | null>(null);
     const [tripStartedAt, setTripStartedAt] = useState<Date | null>(null);
     const [tripActionLoading, setTripActionLoading] = useState(false);
-    const [time, setTime] = useState<Date>(new Date());
+    const [time, setTime] = useState<Date | null>(null);
     const [busInfo, setBusInfo] = useState<BusInfo | null>(null);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -309,27 +313,24 @@ const DriverPage = () => {
 
     // Initialize marker icon on client side only
     useEffect(() => {
-        let isMounted = true;
+        import("leaflet").then((L) => {
+            const svgString = ReactDOMServer.renderToString(
+                <TbBusFilled size={26} />
 
-        import("leaflet").then((leaflet) => {
-            if (!isMounted) return;
-
-            setMarkerIcon(
-                new leaflet.Icon({
-                    iconUrl: "/bus-icon.svg",
-                    iconSize: [42, 42],
-                    iconAnchor: [21, 21],
-                    popupAnchor: [0, -18],
-                })
             );
+            const divIcon = L.divIcon({
+                html: svgString,
+                className: "lucide-marker", // keep minimal to avoid Leaflet defaults
+                iconSize: [42, 42],
+                iconAnchor: [21, 21],
+            });
+            setMarkerIcon(divIcon);
         });
-
-        return () => {
-            isMounted = false;
-        };
     }, []);
 
     useEffect(() => {
+        // Avoid hydration mismatches: don't render real-time values during SSR.
+        setTime(new Date());
         const interval = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(interval);
     }, []);
@@ -760,7 +761,13 @@ const DriverPage = () => {
                         <div className="absolute top-4 right-4 z-[1000]">
                             <MapPill>
                                 <Clock size={11} className="text-blue-600" />
-                                {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                {time === null
+                                    ? "—"
+                                    : time.toLocaleTimeString([], {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                    })}
                             </MapPill>
                         </div>
 

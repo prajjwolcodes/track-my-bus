@@ -1,32 +1,39 @@
 "use client";
 
-import { useState, useEffect, JSX } from "react";
+import { CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
-    Bus,
-    MapPin,
-    Users,
-    Wifi,
-    Navigation,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    Play,
-    Square,
-    Gauge,
-    Signal,
-    UserCheck,
     AlertCircle,
-    ChevronRight,
-    Zap,
+    Bus,
     Calendar,
+    ChevronRight,
+    Clock,
+    Gauge,
+    Loader2,
+    MapPin,
+    Navigation,
+    Play,
+    Radio,
     Route,
     ShieldCheck,
-    Radio,
-    Loader2,
+    Signal,
+    Square,
+    UserCheck,
+    Users,
+    Wifi,
+    Zap
 } from "lucide-react";
-import BusMap from "./BusMap";
-import { cn } from "@/lib/utils";
-import { CardContent } from "@/components/ui/card";
+import dynamic from "next/dynamic";
+import { JSX, useEffect, useState } from "react";
+
+const BusMap = dynamic(() => import("./BusMap"), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-full min-h-[280px] w-full items-center justify-center rounded-3xl bg-slate-100 text-sm text-slate-500">
+            Loading map…
+        </div>
+    ),
+});
 
 // --- Type Definitions ---
 interface Driver {

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useEffect, ReactNode, JSX } from "react";
 import {
     MapPin,
@@ -20,7 +21,15 @@ import {
     LocateFixed,
     Milestone,
 } from "lucide-react";
-import BusMap from "../BusMap";
+
+const BusMap = dynamic(() => import("../BusMap"), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-full min-h-[280px] w-full items-center justify-center rounded-3xl bg-slate-100 text-sm text-slate-500">
+            Loading map…
+        </div>
+    ),
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

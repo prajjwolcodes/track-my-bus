@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- Background -->
+  <circle cx="48" cy="48" r="48" fill="#3B82F6"/>
+  <!-- Bus silhouette -->
+  <g fill="white">
+    <!-- Bus body -->
+    <rect x="20" y="30" width="56" height="36" rx="4" ry="4"/>
+    <!-- Windows -->
+    <rect x="26" y="36" width="8" height="8" rx="1" ry="1" fill="#3B82F6"/>
+    <rect x="38" y="36" width="8" height="8" rx="1" ry="1" fill="#3B82F6"/>
+    <rect x="50" y="36" width="8" height="8" rx="1" ry="1" fill="#3B82F6"/>
+    <!-- Door -->
+    <rect x="26" y="48" width="12" height="14" rx="1" ry="1" fill="#3B82F6"/>
+    <!-- Wheels -->
+    <circle cx="30" cy="68" r="5" fill="white" stroke="#3B82F6" stroke-width="2"/>
+    <circle cx="66" cy="68" r="5" fill="white" stroke="#3B82F6" stroke-width="2"/>
+  </g>
+</svg>

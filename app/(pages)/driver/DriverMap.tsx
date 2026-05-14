@@ -1,6 +1,6 @@
 "use client";
 
-import type { Icon, Map } from "leaflet";
+import type { DivIcon, Icon, Map } from "leaflet";
 import type { LeafletEventHandlerFnMap } from "leaflet";
 import { haversineDistanceMeters } from "@/lib/haversine";
 import { MapPin, Ruler } from "lucide-react";
@@ -44,7 +44,7 @@ function BindMapRef({ mapRef }: { mapRef: MutableRefObject<Map | null> }) {
 
 type DriverMapProps = {
     mapRef: MutableRefObject<Map | null>;
-    markerIcon: Icon | null;
+    markerIcon: Icon | null | DivIcon;
     studentPickupMarkers: Array<StudentPickup & { pickupLocation: Coordinate }>;
     displayPosition: Position | null;
     position: Position | null;

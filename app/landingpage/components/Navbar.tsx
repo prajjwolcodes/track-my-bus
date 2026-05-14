@@ -35,11 +35,11 @@ export default function Navbar() {
   return (
     <header
       className={`fixed top-0 w-full z-50 transition-all duration-300 bg-[#fdf9f2] ${scrolled
-        ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100"
+        ? "bg-white/90 backdrop-blur-md shadow-sm "
         : "bg-[#f5f3ea]"
         }`}
     >
-      <div className="max-w-7xl mx-auto py-2 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto py-3 flex justify-between items-center">
 
         {/* LOGO */}
         <Link
