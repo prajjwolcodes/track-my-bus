@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BellRing, Bus, Home, Navigation, X } from "lucide-react";
 
 /** Auto-dismiss duration; `app/providers.tsx` imports this for the removal timer. */
-export const NOTIFICATION_AUTO_DISMISS_MS = 20_000;
+export const NOTIFICATION_AUTO_DISMISS_MS = 6000;
 
 const PROGRESS_TICK_MS = 30;
 
