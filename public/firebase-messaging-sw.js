@@ -14,6 +14,8 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(async (payload) => {
+    console.log("[SW] Background message received:", payload);
+
     const allClients = await self.clients.matchAll({
         type: "window",
         includeUncontrolled: true,
@@ -25,8 +27,12 @@ messaging.onBackgroundMessage(async (payload) => {
     const closedBody = payload.data?.tabClosedBody || "New update received";
     const icon = payload.notification?.icon || payload.data?.icon;
 
-    if (allClients.length > 0) {
-        // If any tab is open, send the data to the page and let it show an alert.
+    const hasVisibleClient = allClients.some(
+        (client) => client.visibilityState === "visible"
+    );
+
+    // If tab is visible → send message to UI
+    if (hasVisibleClient) {
         allClients.forEach((client) => {
             client.postMessage({
                 type: "FCM_ALERT",
@@ -37,13 +43,20 @@ messaging.onBackgroundMessage(async (payload) => {
                 },
             });
         });
+
         return;
     }
 
-    // No tab open: show a real notification.
+
     await self.registration.showNotification(closedTitle, {
         body: closedBody,
         icon,
+        badge: "/badge-icon.svg",
+        tag: "bus-notification",
+        requireInteraction: true,
+        silent: false,
+        timestamp: Date.now(),
+        vibrate: [200, 100, 200],
     });
 });
 
