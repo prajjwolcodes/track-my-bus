@@ -11,8 +11,7 @@ const nunito = Nunito({
     weight: ["400"],
 });
 
-const imgSubtract =
-    "https://www.figma.com/api/mcp/asset/d4d76dcb-8f36-4dc0-9c08-db647e3511fb";
+const imgSubtract = "/howitworks.png"
 
 const steps = [
     {
@@ -114,9 +113,9 @@ function StepCard({ number, title, description, reverse = false }: StepCardProps
 
 export default function HowItWorks() {
     return (
-        <section 
-        id="how-it-works"
-        className="bg-[#fdf9f2] px-6 py-20 sm:px-8 lg:px-8 lg:py-28">
+        <section
+            id="how-it-works"
+            className="bg-[#fdf9f2] px-6 py-20 sm:px-8 lg:px-8 lg:py-28">
             <div
                 className="mx-auto flex w-full flex-col items-center gap-15"
                 style={{ maxWidth: "1204px" }}

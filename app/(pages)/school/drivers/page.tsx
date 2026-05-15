@@ -85,7 +85,7 @@ export default function DriversPage() {
           >
 
             {/* TOP IMAGE */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 h-28 relative">
+            <div className="bg-linear-to-r from-blue-600 to-cyan-500 h-28 relative">
 
               <div className="absolute left-1/2 -bottom-12 -translate-x-1/2">
 

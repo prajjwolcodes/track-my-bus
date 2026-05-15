@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!);
 
@@ -14,4 +15,4 @@ if (!admin.apps.length) {
 
 export const adminAuth = admin.auth();
 export const adminMessaging = admin.messaging();
-export const adminDb =     admin.firestore();
+export const adminDb = getFirestore();

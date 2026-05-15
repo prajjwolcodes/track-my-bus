@@ -13,8 +13,15 @@ interface AuthUser {
     name?: string;
     schoolName?: string;
     email?: string | null;
+    photoURL?: string | null;
     busId?: string;
     studentId?: string;
+    pickupLocation?: {
+        lat: number | null;
+        lng: number | null;
+        address?: string;
+    };
+    students?: any[]; // Add students array to interface
 }
 
 const AuthContext = createContext<{
@@ -37,6 +44,7 @@ export const AuthProvider = ({ children }: any) => {
             const uid = firebaseUser.uid;
             const email = firebaseUser.email ?? null;
 
+            // Check users collection first
             const userSnap = await getDoc(doc(db, "users", uid));
             if (userSnap.exists()) {
                 setUser({
@@ -48,18 +56,33 @@ export const AuthProvider = ({ children }: any) => {
                 return;
             }
 
+            // Check drivers collection
             const driverSnap = await getDoc(doc(db, "drivers", uid));
             if (driverSnap.exists()) {
+                const driverData = driverSnap.data();
+                let students: any[] = [];
+
+                // If driver has busId, fetch students from buses collection
+                if (driverData.busId) {
+                    const busSnap = await getDoc(doc(db, "buses", driverData.busId));
+                    if (busSnap.exists()) {
+                        const busData = busSnap.data();
+                        students = busData.students || [];
+                    }
+                }
+
                 setUser({
                     uid,
                     email,
                     role: "driver",
-                    ...driverSnap.data(),
+                    students, // Include students array
+                    ...driverData,
                 } as AuthUser);
                 setLoading(false);
                 return;
             }
 
+            // Check students collection
             const studentSnap = await getDoc(doc(db, "students", uid));
             if (studentSnap.exists()) {
                 setUser({
@@ -73,7 +96,6 @@ export const AuthProvider = ({ children }: any) => {
             }
 
             setUser(null);
-
             setLoading(false);
         });
 

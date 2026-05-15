@@ -36,6 +36,8 @@ yarn-error.log*
 # firebase secrets
 /lib/track-my-bus-admin-sdk.json
 
+/public/firebase-messaging-sw.js
+
 # vercel
 .vercel
 
@@ -43,4 +45,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+.playwright-mcp*
 lib\track-my-bus-admin-sdk.json
