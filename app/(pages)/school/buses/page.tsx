@@ -7,6 +7,17 @@ import { BusFront, Plus, User, Route as RouteIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AddBus from "../components/modals/AddBus";
 import BusAssignment from "../components/modals/BusAssignment";
+import { Libre_Baskerville, Nunito } from "next/font/google";
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 type BusItem = {
   id: string;
@@ -29,7 +40,6 @@ export default function BusesPage() {
 
   const [buses, setBuses] = useState<BusItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
-
   const [openBusModal, setOpenBusModal] = useState(false);
   const [openAssignModal, setOpenAssignModal] = useState(false);
 
@@ -48,18 +58,18 @@ export default function BusesPage() {
 
     const unsubBuses = onSnapshot(busesQuery, (snap) => {
       setBuses(
-        snap.docs.map((entry) => ({
-          id: entry.id,
-          ...(entry.data() as Omit<BusItem, "id">),
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<BusItem, "id">),
         }))
       );
     });
 
     const unsubDrivers = onSnapshot(driversQuery, (snap) => {
       setDrivers(
-        snap.docs.map((entry) => ({
-          id: entry.id,
-          ...(entry.data() as Omit<DriverItem, "id">),
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<DriverItem, "id">),
         }))
       );
     });
@@ -70,110 +80,148 @@ export default function BusesPage() {
     };
   }, [schoolId]);
 
+  const driverMap = useMemo(() => {
+    const map = new Map<string, DriverItem>();
+    drivers.forEach((d) => map.set(d.busId || "", d));
+    return map;
+  }, [drivers]);
+
   const assignedCount = useMemo(
-    () => buses.filter((bus) => !!bus.driverId).length,
+    () => buses.filter((b) => !!b.driverId).length,
     [buses]
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
+
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Buses</h1>
-          <p className="text-gray-500 mt-1">
-            Add buses and manage driver-route assignment.
+          <h1 className={`${libreBaskerville.className} text-3xl font-bold text-slate-900`}>
+            Buses
+          </h1>
+          <p className={`${nunito.className} text-slate-500`}>
+            Manage fleet and driver assignments
           </p>
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={() => setOpenAssignModal(true)}
-            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-2xl shadow-md transition"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100 transition"
           >
             <RouteIcon size={18} />
-            <span className="font-medium">Assign Bus</span>
+            <span className={`${nunito.className} font-semibold`}>
+              Assign
+            </span>
           </button>
 
           <button
             onClick={() => setOpenBusModal(true)}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl shadow-md transition"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition"
           >
             <Plus size={18} />
-            <span className="font-medium">Add Bus</span>
+            <span className={`${nunito.className} font-semibold`}>
+              Add Bus
+            </span>
           </button>
         </div>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">Total Buses</p>
-          <h2 className="text-3xl font-bold mt-2">{buses.length}</h2>
+
+        <div className="bg-white rounded-2xl p-6 border shadow-sm">
+          <p className={`${nunito.className} text-slate-500 text-sm`}>
+            Total Buses
+          </p>
+          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-slate-900`}>
+            {buses.length}
+          </h2>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">Assigned Buses</p>
-          <h2 className="text-3xl font-bold mt-2">{assignedCount}</h2>
+        <div className="bg-white rounded-2xl p-6 border shadow-sm">
+          <p className={`${nunito.className} text-slate-500 text-sm`}>
+            Assigned
+          </p>
+          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-emerald-600`}>
+            {assignedCount}
+          </h2>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">Unassigned Buses</p>
-          <h2 className="text-3xl font-bold mt-2">{buses.length - assignedCount}</h2>
+        <div className="bg-white rounded-2xl p-6 border shadow-sm">
+          <p className={`${nunito.className} text-slate-500 text-sm`}>
+            Unassigned
+          </p>
+          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-rose-600`}>
+            {buses.length - assignedCount}
+          </h2>
         </div>
+
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
         {buses.map((bus) => {
           const assignedDriver = drivers.find(
-            (driver) => driver.busId === bus.id || driver.driverId === bus.driverId
+            (d) => d.busId === bus.id || d.driverId === bus.driverId
           );
 
           return (
-            <div key={bus.id} className="bg-white rounded-3xl border shadow-sm p-6">
+            <div
+              key={bus.id}
+              className="bg-white border rounded-3xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition"
+            >
+
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-gray-500 text-sm">Bus Number</p>
-                  <h2 className="text-2xl font-bold text-gray-900 mt-1">
-                    {bus.busNo || "--"}
-                  </h2>
+                  <h3 className={`${libreBaskerville.className} text-xl font-bold text-slate-900`}>
+                    Bus {bus.busNo || "--"}
+                  </h3>
+                  <p className={`${nunito.className} text-xs text-slate-500`}>
+                    Route {bus.routeNo || "N/A"}
+                  </p>
                 </div>
-                <BusFront className="text-blue-600" />
+
+                <BusFront className="text-blue-500" />
               </div>
 
-              <div className="mt-5 space-y-3">
-                <div className="flex justify-between rounded-xl bg-gray-50 p-3 text-sm">
-                  <span className="text-gray-500">Plate</span>
-                  <span className="font-medium text-gray-800">{bus.plateNo || "--"}</span>
+              <div className="mt-5 space-y-3 text-sm">
+
+                <div className="flex justify-between bg-slate-50 p-3 rounded-xl">
+                  <span className="text-slate-500">Plate</span>
+                  <span className="font-medium text-slate-700">
+                    {bus.plateNo || "--"}
+                  </span>
                 </div>
 
-                <div className="flex justify-between rounded-xl bg-gray-50 p-3 text-sm">
-                  <span className="text-gray-500">Driver</span>
-                  <span className="font-medium text-gray-800 flex items-center gap-1">
+                <div className="flex justify-between bg-slate-50 p-3 rounded-xl">
+                  <span className="text-slate-500">Driver</span>
+                  <span className="font-medium text-slate-700 flex items-center gap-1">
                     <User size={14} />
                     {assignedDriver?.name || "Unassigned"}
                   </span>
                 </div>
 
-                <div className="flex justify-between rounded-xl bg-gray-50 p-3 text-sm">
-                  <span className="text-gray-500">Route</span>
-                  <span className="font-medium text-gray-800">{bus.routeNo || "--"}</span>
-                </div>
               </div>
             </div>
           );
         })}
+
       </div>
 
       {buses.length === 0 && (
         <div className="bg-white border rounded-3xl p-12 text-center">
-          <h3 className="text-xl font-semibold text-gray-800">No Buses Added</h3>
-          <p className="text-gray-500 mt-2">
-            Add buses to start building your transport network.
+          <h3 className={`${nunito.className} text-lg font-semibold text-slate-700`}>
+            No Buses Found
+          </h3>
+          <p className={`${nunito.className} text-slate-500 mt-2`}>
+            Start by adding buses to your system
           </p>
         </div>
       )}
 
       {openBusModal && <AddBus onClose={() => setOpenBusModal(false)} />}
       {openAssignModal && <BusAssignment onClose={() => setOpenAssignModal(false)} />}
+
     </div>
   );
 }
