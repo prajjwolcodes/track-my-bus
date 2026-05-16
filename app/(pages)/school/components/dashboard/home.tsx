@@ -397,7 +397,7 @@ export default function DashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* Drivers Section */}
-        <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-linear-to-br from-white to-slate-50 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-100">
@@ -521,7 +521,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Students Section */}
-        <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-linear-to-br from-white to-slate-50 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-100">
