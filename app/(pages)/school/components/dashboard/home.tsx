@@ -10,6 +10,7 @@ import AddDriver from "../modals/AddDriver";
 import BusAssignment from "../modals/BusAssignment";
 import Link from "next/link";
 import { Libre_Baskerville, Nunito } from "next/font/google";
+import AddStudent from "../modals/AddStudent";
 
 
 const libreBaskerville = Libre_Baskerville({
@@ -28,6 +29,7 @@ export default function DashboardHome() {
   const [openDriver, setOpenDriver] = useState(false);
   const [openBus, setOpenBus] = useState(false);
   const [openAssign, setOpenAssign] = useState(false);
+  const [openStudent, setOpenStudent] = useState(false);
 
   const [drivers, setDrivers] = useState<any[]>([]);
   const [buses, setBuses] = useState<any[]>([]);
@@ -127,9 +129,8 @@ export default function DashboardHome() {
           {
             label: "Add Student",
             icon: Users,
-            href: "/student",
-            color:
-              "bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100",
+            action: () => setOpenStudent(true),
+            color: "bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100",
           },
           {
             label: "Assign Bus",
@@ -648,6 +649,7 @@ export default function DashboardHome() {
       {/* Modals remain the same... */}
       {openDriver && <AddDriver onClose={() => setOpenDriver(false)} />}
       {openBus && <AddBus onClose={() => setOpenBus(false)} />}
+      {openStudent && (<AddStudent onClose={() => setOpenStudent(false)} />)}
       {openAssign && <BusAssignment onClose={() => setOpenAssign(false)} />}
     </div>
   );
