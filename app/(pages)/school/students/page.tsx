@@ -93,12 +93,13 @@ export default function StudentsPage() {
           >
 
             {/* TOP */}
-            <div className="bg-gradient-to-r from-cyan-600 to-blue-600 h-28 relative">
+            <div className="bg-linear-to-r from-cyan-600 to-blue-600 h-28 relative">
 
               <div className="absolute left-1/2 -bottom-12 -translate-x-1/2">
 
                 <img
                   src={
+                    student.photo ||
                     student.photoUrl ||
                     "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
                   }
@@ -115,7 +116,7 @@ export default function StudentsPage() {
 
               {/* NAME */}
               <h2 className="text-xl font-bold text-gray-900">
-                {student.studentName || "Unknown Student"}
+                {student.studentName || student.name || "Unknown Student"}
               </h2>
 
               {/* STUDENT ID */}
@@ -124,7 +125,7 @@ export default function StudentsPage() {
                 <IdCard size={16} />
 
                 <span className="text-sm">
-                  {student.studentId || "--"}
+                  {student.studentId || student.id || "--"}
                 </span>
 
               </div>
@@ -135,7 +136,7 @@ export default function StudentsPage() {
                 <GraduationCap size={16} />
 
                 <span className="text-sm">
-                  {student.className || "--"}
+                  {student.className || student.grade || "--"}
                 </span>
 
               </div>
@@ -146,7 +147,7 @@ export default function StudentsPage() {
                 <BusFront size={16} />
 
                 <span className="text-sm">
-                  Bus: {student.busNumber || "--"}
+                  Bus: {student.busNumber || student.busNo || "--"}
                 </span>
 
               </div>
@@ -181,7 +182,7 @@ export default function StudentsPage() {
           <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
 
             {/* HEADER */}
-            <div className="relative bg-gradient-to-r from-cyan-600 to-blue-600 h-40">
+            <div className="relative bg-linear-to-r from-cyan-600 to-blue-600 h-40">
 
               <button
                 onClick={() => setSelectedStudent(null)}
@@ -194,6 +195,7 @@ export default function StudentsPage() {
 
                 <img
                   src={
+                    selectedStudent.photo ||
                     selectedStudent.photoUrl ||
                     "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
                   }
@@ -211,7 +213,7 @@ export default function StudentsPage() {
               <div className="text-center mb-8">
 
                 <h2 className="text-3xl font-bold text-gray-900">
-                  {selectedStudent.studentName}
+                  {selectedStudent.studentName || selectedStudent.name || "Unknown Student"}
                 </h2>
 
                 <p className="text-gray-500 mt-2">
@@ -241,7 +243,7 @@ export default function StudentsPage() {
                   </div>
 
                   <p className="font-semibold text-gray-800">
-                    {selectedStudent.className || "--"}
+                    {selectedStudent.className || selectedStudent.grade || "--"}
                   </p>
                 </div>
 
@@ -274,7 +276,7 @@ export default function StudentsPage() {
                   </div>
 
                   <p className="font-semibold text-gray-800">
-                    {selectedStudent.busNumber || "--"}
+                    {selectedStudent.busNumber || selectedStudent.busNo || "--"}
                   </p>
                 </div>
 

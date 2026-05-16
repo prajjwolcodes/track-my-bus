@@ -6,7 +6,8 @@ import {
   LayoutDashboard,
   Bus,
   Users,
-  MapPin,
+  Route,
+  Activity,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -15,8 +16,10 @@ const Sidebar = () => {
   const nav = [
     { name: "Dashboard", href: "/school", icon: LayoutDashboard },
     { name: "Drivers", href: "/school/drivers", icon: Bus },
+    { name: "Buses", href: "/school/buses", icon: Bus },
     { name: "Students", href: "/school/students", icon: Users },
-    { name: "Routes", href: "/school/routes", icon: MapPin },
+    { name: "Routes", href: "/school/routes", icon: Route },
+    { name: "Live Tracking", href: "/school/live", icon: Activity },
   ];
 
   return (

@@ -16,12 +16,31 @@ import { UserPlus, Phone, BusFront } from "lucide-react";
 
 import AddDriver from "../components/modals/AddDriver";
 
+type DriverItem = {
+  id: string;
+  name?: string;
+  phone?: string;
+  photo?: string;
+  photoUrl?: string;
+  busId?: string | null;
+  driverId?: string;
+};
+
+type BusItem = {
+  id: string;
+  busNo?: string;
+  plateNo?: string;
+  driverId?: string | null;
+  routeNo?: string | null;
+};
+
 export default function DriversPage() {
   const { user } = useAuth();
 
   const schoolId = user?.schoolId;
 
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [buses, setBuses] = useState<BusItem[]>([]);
   const [openDriver, setOpenDriver] = useState(false);
 
   useEffect(() => {
@@ -36,7 +55,27 @@ export default function DriversPage() {
       setDrivers(
         snap.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data(),
+          ...(doc.data() as Omit<DriverItem, "id">),
+        }))
+      );
+    });
+
+    return () => unsub();
+  }, [schoolId]);
+
+  useEffect(() => {
+    if (!schoolId) return;
+
+    const q = query(
+      collection(db, "buses"),
+      where("schoolId", "==", schoolId)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      setBuses(
+        snap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<BusItem, "id">),
         }))
       );
     });
@@ -78,11 +117,16 @@ export default function DriversPage() {
       {/* DRIVER CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
 
-        {drivers.map((driver) => (
-          <div
-            key={driver.id}
-            className="bg-white rounded-3xl border shadow-sm overflow-hidden hover:shadow-lg transition"
-          >
+        {drivers.map((driver) => {
+          const assignedBus = buses.find(
+            (bus) => bus.id === driver.busId || bus.driverId === (driver.driverId || driver.id)
+          );
+
+          return (
+              <div
+                key={driver.id}
+                className="bg-white rounded-3xl border shadow-sm overflow-hidden hover:shadow-lg transition"
+              >
 
             {/* TOP IMAGE */}
             <div className="bg-linear-to-r from-blue-600 to-cyan-500 h-28 relative">
@@ -91,6 +135,7 @@ export default function DriversPage() {
 
                 <img
                   src={
+                    driver.photo ||
                     driver.photoUrl ||
                     "https://cdn-icons-png.flaticon.com/512/149/149071.png"
                   }
@@ -131,7 +176,7 @@ export default function DriversPage() {
                   </span>
 
                   <span className="font-semibold text-gray-800">
-                    {driver.busCode || "--"}
+                    {assignedBus?.id || "--"}
                   </span>
 
                 </div>
@@ -147,7 +192,19 @@ export default function DriversPage() {
                   </div>
 
                   <span className="font-semibold text-gray-800">
-                    {driver.busNumber || "--"}
+                    {assignedBus?.busNo || "--"}
+                  </span>
+
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+
+                  <span className="text-sm text-gray-500">
+                    Route
+                  </span>
+
+                  <span className="font-semibold text-gray-800">
+                    {assignedBus?.routeNo || "--"}
                   </span>
 
                 </div>
@@ -155,8 +212,10 @@ export default function DriversPage() {
               </div>
 
             </div>
-          </div>
-        ))}
+
+              </div>
+          );
+        })}
 
       </div>
 
