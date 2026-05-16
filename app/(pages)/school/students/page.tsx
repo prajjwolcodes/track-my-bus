@@ -16,6 +16,18 @@ import {
   Search,
 } from "lucide-react";
 import AddStudent from "../components/modals/AddStudent";
+import { Libre_Baskerville, Nunito } from "next/font/google";
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
 
 export default function StudentsPage() {
   const { user } = useAuth();
@@ -26,6 +38,7 @@ export default function StudentsPage() {
   const [busFilter, setBusFilter] = useState("");
   const [buses, setBuses] = useState<string[]>([]);
   const [openStudent, setOpenStudent] = useState(false);
+
 
   useEffect(() => {
     if (!user?.schoolId) return;
@@ -80,10 +93,10 @@ export default function StudentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
 
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className={`${libreBaskerville.className} text-3xl font-bold text-slate-900`}>
             Students
           </h1>
-          <p className="text-slate-500">
+          <p className={`${nunito.className} text-slate-500`}>
             Total count: {students.length}
           </p>
         </div>
@@ -102,7 +115,7 @@ export default function StudentsPage() {
         >
           <UserPlus size={18} />
 
-          <span className="hidden sm:inline font-medium">
+          <span className={`${nunito.className} hidden sm:inline font-medium`}>
             Add Student
           </span>
         </button>
@@ -115,7 +128,7 @@ export default function StudentsPage() {
           <input
             type="text"
             placeholder="Search students by name, ID, or parent..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            className={`${nunito.className} w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none`}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
@@ -124,9 +137,9 @@ export default function StudentsPage() {
           <select
             value={busFilter}
             onChange={(e) => setBusFilter(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            className={`${nunito.className} w-full px-4 py-2.5 bg-white border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none`}
           >
-            <option value="">All Students</option>
+            <option value="" >All Students</option>
 
             {buses.map((bus) => (
               <option key={bus} value={bus}>
@@ -167,38 +180,34 @@ export default function StudentsPage() {
                 )}
 
                 <div>
-                  <h3 className="font-bold text-slate-900">
+                  <h3 className={`${libreBaskerville.className} text-xl font-bold text-slate-900`}>
                     {s.name}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className={`${nunito.className} text-xs text-slate-500`}>
                     Grade: {s.grade || "--"}
                   </p>
                 </div>
-
               </div>
 
               <div className="mt-4 space-y-2 text-xs text-slate-600">
 
-                {/* Student ID */}
                 <div className="flex items-center gap-2">
                   <IdCard size={14} className="text-slate-400" />
-                  <span className="font-medium text-slate-700">
+                  <span className={`${nunito.className} font-medium text-slate-700`}>
                     {s.studentId}
                   </span>
                 </div>
 
-                {/* Bus */}
                 <div className="flex items-center gap-2">
                   <BusFront size={14} className="text-slate-400" />
-                  <span className="font-medium text-slate-700">
+                  <span className={`${nunito.className} font-medium text-slate-700`}>
                     {s.busNo || "Not Assigned"}
                   </span>
                 </div>
 
-                {/* Parent */}
                 <div className="flex items-center gap-2">
                   <User size={14} className="text-slate-400" />
-                  <span className="font-medium text-slate-700">
+                  <span className={`${nunito.className} font-medium text-slate-700`} >
                     {s.parentName}
                   </span>
                 </div>
@@ -233,20 +242,20 @@ export default function StudentsPage() {
                   className="w-12 h-12 rounded-2xl border-4 border-white  object-cover bg-white"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-3xl bg-indigo-200 text-indigo-700 border border-indigo-100 flex items-center justify-center font-bold text-2xl shadow-xl">
+                <div className={`${nunito.className} w-24 h-24 rounded-3xl bg-indigo-200 text-indigo-700 border border-indigo-100 flex items-center justify-center font-bold text-2xl shadow-xl`}>
                   {selectedStudent.name?.charAt(0)}
                 </div>
               )}
             </div>
 
             <div className="text-center mt-16">
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className={`${libreBaskerville.className} text-2xl font-bold text-slate-900`}>
                 {selectedStudent.name}
               </h2>
 
-              <p className="text-slate-500 text-sm mt-1">
+              <p className={`${nunito.className} text-slate-500 text-sm mt-1`}>
                 Student ID:{" "}
-                <span className="font-medium text-slate-700">
+                <span className={`${nunito.className} font-medium text-slate-700`}>
                   {selectedStudent.studentId}
                 </span>
               </p>
@@ -254,10 +263,10 @@ export default function StudentsPage() {
 
             <div className="grid grid-cols-2 gap-4 mt-2 p-4">
 
-              <Info icon={GraduationCap} label="Grade" value={selectedStudent.grade} />
-              <Info icon={BusFront} label="Bus No" value={selectedStudent.busNo} />
-              <Info icon={User} label="Parent" value={selectedStudent.parentName} />
-              <Info icon={Phone} label="Phone" value={selectedStudent.parentPhone} />
+              <Info icon={GraduationCap} label="Grade" value={selectedStudent.grade} className={`${nunito.className}`} />
+              <Info icon={BusFront} label="Bus No" value={selectedStudent.busNo} className={`${nunito.className}`} />
+              <Info icon={User} label="Parent" value={selectedStudent.parentName} className={`${nunito.className}`} />
+              <Info icon={Phone} label="Phone" value={selectedStudent.parentPhone} className={`${nunito.className}`} />
 
               <Info
                 icon={MapPin}
@@ -267,8 +276,8 @@ export default function StudentsPage() {
                     ? `${selectedStudent.pickupLocation.lat.toFixed(4)}, ${selectedStudent.pickupLocation.lng.toFixed(4)}`
                     : "Not Set"
                 }
+                className={`${nunito.className}`}
               />
-
             </div>
 
           </div>
@@ -283,14 +292,14 @@ export default function StudentsPage() {
   );
 }
 
-function Info({ icon: Icon, label, value }: any) {
+function Info({ icon: Icon, label, value, className }: any) {
   return (
     <div className="bg-slate-50 border rounded-xl p-3">
-      <div className="flex items-center gap-2 text-xs text-slate-400 uppercase">
+      <div className={`flex items-center gap-2 text-xs text-slate-400 uppercase ${className}`}>
         <Icon size={12} />
         {label}
       </div>
-      <p className="text-sm font-semibold text-slate-700 mt-1">
+      <p className={`text-sm font-semibold text-slate-700 mt-1 ${className}`}>
         {value || "--"}
       </p>
     </div>
