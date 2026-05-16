@@ -1,44 +1,38 @@
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/app/context/authContext";
 import { db } from "@/firebase/firebase";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-import { Plus, Route, BusFront, MapPin } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+
+import { Route, BusFront, MapPin, Plus } from "lucide-react";
+
+import AddRoute from "../components/modals/AddRoute";
+import { Libre_Baskerville, Nunito } from "next/font/google";
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 type RouteItem = {
   id: string;
-  routeId?: string;
   routeNo?: string;
   routeName?: string;
-  stops?: string[];
   busId?: string | null;
+  stops?: string[];
 };
 
 type BusItem = {
   id: string;
   busNo?: string;
   plateNo?: string;
-  routeNo?: string | null;
 };
-
-function generateRouteId(schoolId: string) {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const random = Math.random().toString(36).slice(2, 5).toUpperCase();
-  return `${schoolId}-ROUTE-${yy}${mm}${dd}-${random}`;
-}
 
 export default function RoutesPage() {
   const { user } = useAuth();
@@ -47,41 +41,35 @@ export default function RoutesPage() {
   const [routes, setRoutes] = useState<RouteItem[]>([]);
   const [buses, setBuses] = useState<BusItem[]>([]);
 
-  const [openAdd, setOpenAdd] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const [routeNo, setRouteNo] = useState("");
-  const [routeName, setRouteName] = useState("");
-  const [selectedBusId, setSelectedBusId] = useState("");
-  const [stopsText, setStopsText] = useState("");
+  const [openRoute, setOpenRoute] = useState(false);
 
   useEffect(() => {
     if (!schoolId) return;
 
-    const routesQuery = query(
+    const qRoutes = query(
       collection(db, "routes"),
       where("schoolId", "==", schoolId)
     );
 
-    const busesQuery = query(
+    const qBuses = query(
       collection(db, "buses"),
       where("schoolId", "==", schoolId)
     );
 
-    const unsubRoutes = onSnapshot(routesQuery, (snap) => {
+    const unsubRoutes = onSnapshot(qRoutes, (snap) => {
       setRoutes(
-        snap.docs.map((entry) => ({
-          id: entry.id,
-          ...(entry.data() as Omit<RouteItem, "id">),
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<RouteItem, "id">),
         }))
       );
     });
 
-    const unsubBuses = onSnapshot(busesQuery, (snap) => {
+    const unsubBuses = onSnapshot(qBuses, (snap) => {
       setBuses(
-        snap.docs.map((entry) => ({
-          id: entry.id,
-          ...(entry.data() as Omit<BusItem, "id">),
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<BusItem, "id">),
         }))
       );
     });
@@ -92,229 +80,122 @@ export default function RoutesPage() {
     };
   }, [schoolId]);
 
-  const handleCreateRoute = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!schoolId) return;
-
-    const normalizedRouteNo = routeNo.trim();
-    if (!normalizedRouteNo) {
-      alert("Route number is required");
-      return;
-    }
-
-    const stops = stopsText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    try {
-      setLoading(true);
-
-      const routeId = generateRouteId(schoolId);
-
-      await setDoc(doc(db, "routes", routeId), {
-        routeId,
-        routeNo: normalizedRouteNo,
-        routeName: routeName.trim() || `Route ${normalizedRouteNo}`,
-        schoolId,
-        busId: selectedBusId || null,
-        stops,
-        createdAt: serverTimestamp(),
-      });
-
-      if (selectedBusId) {
-        await updateDoc(doc(db, "buses", selectedBusId), {
-          routeNo: normalizedRouteNo,
-        });
-      }
-
-      setRouteNo("");
-      setRouteName("");
-      setSelectedBusId("");
-      setStopsText("");
-      setOpenAdd(false);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to create route. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const totalStops = useMemo(
+    () => routes.reduce((acc, r) => acc + (r.stops?.length || 0), 0),
+    [routes]
+  );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Routes</h1>
-          <p className="text-gray-500 mt-1">
-            Create routes, add stops, and assign a bus.
+          <h1 className={`text-3xl font-bold text-slate-900 ${libreBaskerville.className}`}>
+            Routes
+          </h1>
+          <p className={`text-slate-500 ${nunito.className}`}>
+            Total Routes: {routes.length} 
           </p>
         </div>
 
         <button
-          onClick={() => setOpenAdd(true)}
-          className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-2xl shadow-md transition"
+          onClick={() => setOpenRoute(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+          bg-rose-50 text-rose-700 border border-rose-100
+          hover:bg-rose-100 transition"
         >
-          <Plus size={20} />
-          <span className="font-medium">Add Route</span>
+          <Plus size={18} />
+          <span className={nunito.className + " font-medium"}>
+            Add Route
+          </span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {routes.map((routeItem) => {
-          const bus = buses.find((entry) => entry.id === routeItem.busId);
-          const stops = routeItem.stops ?? [];
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            label: "Total Routes",
+            val: routes.length,
+            color: "text-rose-700 bg-rose-50",
+          },
+          {
+            label: "Assigned Routes",
+            val: routes.filter((r) => r.busId).length,
+            color: "text-emerald-700 bg-emerald-50",
+          },
+          {
+            label: "Unassigned Routes",
+            val: routes.filter((r) => !r.busId).length,
+            color: "text-slate-700 bg-slate-100",
+          },
+        ].map((s, i) => (
+          <div key={i} className={`p-6 rounded-2xl border ${s.color}`}>
+            <p className={nunito.className + " text-sm"}>{s.label}</p>
+            <p className={libreBaskerville.className + " text-3xl font-bold mt-2"}>
+              {s.val}
+            </p>
+          </div>
+        ))}
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {routes.map((route) => {
+          const bus = buses.find((b) => b.id === route.busId);
 
           return (
             <div
-              key={routeItem.id}
-              className="bg-white rounded-3xl border shadow-sm p-6"
+              key={route.id}
+              className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-gray-500">Route Number</p>
-                  <h2 className="text-xl font-bold text-gray-900 mt-1">
-                    {routeItem.routeNo || "--"}
+                  <p className={`${nunito.className} text-sm text-slate-500`}>Route No</p>
+                  <h2 className={`${libreBaskerville.className} text-xl font-bold text-slate-900`}>
+                    {route.routeNo || "N/A"}
                   </h2>
                 </div>
-                <Route className="text-rose-600" size={22} />
+                <Route className="text-rose-800" />
               </div>
 
-              <p className="mt-3 text-sm text-gray-700 font-medium">
-                {routeItem.routeName || "Untitled Route"}
+              <p className={`mt-2 font-medium ${nunito.className}`}>
+                {route.routeName || "Untitled Route"}
               </p>
 
-              <div className="mt-5 space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <BusFront size={16} />
+              <div className={`${nunito.className} mt-4 space-y-2 text-sm text-slate-600`}>
+                <div className="flex items-center gap-2">
+                  <BusFront size={14} />
                   <span>
-                    {bus ? `Bus ${bus.busNo || bus.plateNo || bus.id}` : "No bus assigned"}
+                    {bus?.busNo || "No bus assigned"}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-gray-600">
-                  <MapPin size={16} />
-                  <span>{stops.length} stops</span>
+                <div className="flex items-center gap-2">
+                  <MapPin size={14} />
+                  <span>{route.stops?.length || 0} stops</span>
                 </div>
               </div>
-
-              {stops.length > 0 && (
-                <div className="mt-4 rounded-xl bg-gray-50 border p-3">
-                  <p className="text-xs text-gray-500 mb-2">Stops</p>
-                  <div className="space-y-1">
-                    {stops.slice(0, 4).map((stop, index) => (
-                      <p key={`${routeItem.id}-${index}`} className="text-sm text-gray-700">
-                        {index + 1}. {stop}
-                      </p>
-                    ))}
-                    {stops.length > 4 && (
-                      <p className="text-xs text-gray-500">+{stops.length - 4} more</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
-      </div>
+      </section>
 
       {routes.length === 0 && (
         <div className="bg-white border rounded-3xl p-12 text-center">
-          <h3 className="text-xl font-semibold text-gray-800">No Routes Added</h3>
-          <p className="text-gray-500 mt-2">
-            Create your first route to organize bus movement.
+          <h3 className={`${libreBaskerville.className} text-xl font-semibold text-slate-800`}>
+            No Routes Found
+          </h3>
+          <p className={`${nunito.className} text-slate-500 mt-2`}>
+            Create your first route to organize transport system.
           </p>
         </div>
       )}
 
-      {openAdd && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-start justify-center p-4 pt-16">
-          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-6">
-            <h3 className="text-2xl font-bold text-gray-900">Add Route</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Define route details and optionally assign a bus.
-            </p>
-
-            <form onSubmit={handleCreateRoute} className="mt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-1 block">
-                    Route Number
-                  </label>
-                  <input
-                    type="text"
-                    value={routeNo}
-                    onChange={(e) => setRouteNo(e.target.value)}
-                    placeholder="e.g. R-12"
-                    className="w-full border p-2 rounded focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-1 block">
-                    Route Name
-                  </label>
-                  <input
-                    type="text"
-                    value={routeName}
-                    onChange={(e) => setRouteName(e.target.value)}
-                    placeholder="e.g. North Zone Morning"
-                    className="w-full border p-2 rounded focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600 mb-1 block">
-                  Assign Bus (Optional)
-                </label>
-                <select
-                  value={selectedBusId}
-                  onChange={(e) => setSelectedBusId(e.target.value)}
-                  className="w-full border p-2 rounded focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                >
-                  <option value="">Choose Bus</option>
-                  {buses.map((bus) => (
-                    <option key={bus.id} value={bus.id}>
-                      Bus {bus.busNo || "--"} ({bus.plateNo || "No Plate"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600 mb-1 block">
-                  Stops (One per line)
-                </label>
-                <textarea
-                  rows={6}
-                  value={stopsText}
-                  onChange={(e) => setStopsText(e.target.value)}
-                  placeholder="Stop 1\nStop 2\nStop 3"
-                  className="w-full border p-3 rounded focus:ring-2 focus:ring-rose-400 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpenAdd(false)}
-                  className="px-6 py-2 bg-gray-300 rounded-xl hover:bg-gray-400 transition"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition disabled:opacity-50"
-                >
-                  {loading ? "Saving..." : "Save Route"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {openRoute && schoolId && (
+        <AddRoute
+          onClose={() => setOpenRoute(false)}
+          buses={buses}
+          schoolId={schoolId}
+        />
       )}
     </div>
   );
