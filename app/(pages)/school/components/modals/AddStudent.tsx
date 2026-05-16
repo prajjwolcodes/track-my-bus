@@ -188,7 +188,7 @@ const AddStudent: React.FC<Props> = ({ onClose }) => {
                                 Add Students
                             </h2>
                             <p className={`text-sm text-slate-500 ${nunito.className}`}>
-                                Register and assign students to buses
+                                Register students.
                             </p>
                         </div>
                     </div>
