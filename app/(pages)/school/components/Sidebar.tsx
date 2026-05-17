@@ -32,13 +32,10 @@ const nunito = Nunito({
   weight: ["400", "600", "700"],
 });
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (open: boolean) => void }) => {
   const pathname = usePathname();
 
   const [collapsed, setCollapsed] = useState(false);
-
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   const nav = [
@@ -101,18 +98,16 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
           className="
-            fixed inset-0 z-40
+            fixed inset-0 z-50
             bg-black/50 backdrop-blur-sm
             lg:hidden
           "
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         ref={sidebarRef}
         className={`
@@ -120,7 +115,7 @@ const Sidebar = () => {
           h-screen
           flex flex-col
           border-r border-blue-900/60
-          bg-gradient-to-b from-[#041C3B] via-[#06264F] to-[#03152D]
+          bg-linear-to-b from-[#041C3B] via-[#06264F] to-[#03152D]
           shadow-2xl
           transition-all duration-300 ease-in-out
 
@@ -197,7 +192,6 @@ const Sidebar = () => {
               )}
             </button>
 
-            {/* MOBILE CLOSE */}
             <button
               onClick={() => setMobileOpen(false)}
               className="
@@ -321,13 +315,12 @@ const Sidebar = () => {
         </nav>
       </aside>
 
-      {/* MOBILE OPEN BUTTON */}
       <button
         onClick={() =>
           setMobileOpen(true)
         }
         className="
-          fixed bottom-5 right-5 z-30
+          fixed bottom-5 right-5 z-50
           lg:hidden
           w-14 h-14
           rounded-2xl

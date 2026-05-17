@@ -11,6 +11,7 @@ import BusAssignment from "../modals/BusAssignment";
 import Link from "next/link";
 import { Libre_Baskerville, Nunito } from "next/font/google";
 import AddStudent from "../modals/AddStudent";
+import AddRoute from "../modals/AddRoute";
 
 
 const libreBaskerville = Libre_Baskerville({
@@ -29,6 +30,7 @@ export default function DashboardHome() {
   const [openDriver, setOpenDriver] = useState(false);
   const [openBus, setOpenBus] = useState(false);
   const [openAssign, setOpenAssign] = useState(false);
+  const [openRoute, setOpenRoute] = useState(false);
   const [openStudent, setOpenStudent] = useState(false);
 
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -140,9 +142,9 @@ export default function DashboardHome() {
               "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100",
           },
           {
-            label: "Routes",
+            label: "Add Route",
             icon: Route,
-            href: "/school/routes",
+            action: () => setOpenRoute(true),
             color:
               "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100",
           },
@@ -609,7 +611,6 @@ export default function DashboardHome() {
                       className="hover:bg-slate-50 transition-colors duration-200"
                     >
 
-                      {/* Student */}
                       <td className="px-6 py-5">
                         <div>
                           <p
@@ -620,7 +621,6 @@ export default function DashboardHome() {
                         </div>
                       </td>
 
-                      {/* Parent */}
                       <td className="px-6 py-5">
                         <span
                           className={`text-sm text-slate-700 ${nunito.className}`}
@@ -646,11 +646,13 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Modals remain the same... */}
       {openDriver && <AddDriver onClose={() => setOpenDriver(false)} />}
       {openBus && <AddBus onClose={() => setOpenBus(false)} />}
       {openStudent && (<AddStudent onClose={() => setOpenStudent(false)} />)}
       {openAssign && <BusAssignment onClose={() => setOpenAssign(false)} />}
+      {openRoute && (<AddRoute onClose={() => setOpenRoute(false)} schoolId={schoolId ?? ""} buses={buses}
+      />
+      )}
     </div>
   );
 }

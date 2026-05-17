@@ -30,7 +30,7 @@ const nunito = Nunito({
   weight: ["400", "600", "700"],
 });
 
-const Navbar = () => {
+const Navbar = ({ setMobileOpen }: { setMobileOpen: (open: boolean) => void }) => {
   const { user } = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -70,11 +70,14 @@ const Navbar = () => {
       >
         <div className="h-16 px-4 md:px-6 flex items-center justify-between">
 
-          {/* LEFT */}
           <div className="flex items-center gap-3">
 
-            {/* Hamburger */}
             <button
+              onClick={() => {
+                setOpen(!open);
+                setMobileOpen(true)
+              }
+              }
               className="
                 lg:hidden
                 p-2 rounded-xl
