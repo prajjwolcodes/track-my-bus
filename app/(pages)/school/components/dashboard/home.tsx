@@ -4,7 +4,7 @@ import { useAuth } from "@/app/context/authContext";
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { UserPlus, BusFront, Users, Map, Route, Activity, CheckCircle2 } from "lucide-react";
+import { UserPlus, BusFront, Users, Map, Route, Activity, CheckCircle2, Bus } from "lucide-react";
 import AddBus from "../modals/AddBus";
 import AddDriver from "../modals/AddDriver";
 import BusAssignment from "../modals/BusAssignment";
@@ -114,6 +114,13 @@ export default function DashboardHome() {
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
+          {
+            label: "Add Bus",
+            icon: Bus,
+            action: () => setOpenBus(true),
+            color:
+              "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100",
+          },
           {
             label: "Add Driver",
             icon: UserPlus,

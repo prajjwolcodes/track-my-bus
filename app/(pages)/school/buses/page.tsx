@@ -175,31 +175,29 @@ export default function BusesPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-        <div className="bg-white rounded-2xl p-6 border shadow-sm">
-          <p className={`${nunito.className} text-slate-500 text-sm`}>
-            Total Buses
-          </p>
-          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-slate-900`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-blue-200/30 rounded-2xl p-4 md:p-5 border shadow-sm">          <p className={`${nunito.className} text-slate-500 text-sm`}>
+          Total Buses
+        </p>
+          <h2 className={`${libreBaskerville.className} text-3xl md:text-3xl font-bold mt-2 text-slate-900`}>
             {buses.length}
           </h2>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border shadow-sm">
+        <div className=" bg-emerald-200/30 rounded-2xl p-4 md:p-5 border shadow-sm">
           <p className={`${nunito.className} text-slate-500 text-sm`}>
             Assigned
           </p>
-          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-emerald-600`}>
+          <h2 className={`${libreBaskerville.className} text-3xl md:text-3xl font-bold mt-2 text-emerald-600`}>
             {assignedCount}
           </h2>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border shadow-sm">
+        <div className=" bg-rose-200/30 rounded-2xl p-4 md:p-5 border shadow-sm">
           <p className={`${nunito.className} text-slate-500 text-sm`}>
             Unassigned
           </p>
-          <h2 className={`${libreBaskerville.className} text-3xl font-bold mt-2 text-rose-600`}>
+          <h2 className={`${libreBaskerville.className} text-3xl md:text-3xl font-bold mt-2 text-rose-600`}>
             {buses.length - assignedCount}
           </h2>
         </div>

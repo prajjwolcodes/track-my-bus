@@ -12,6 +12,7 @@ import {
   where,
   doc,
   deleteDoc,
+  updateDoc
 } from "firebase/firestore";
 
 import {
@@ -40,7 +41,6 @@ const nunito = Nunito({
   subsets: ["latin"],
   weight: ["400"],
 });
-
 
 type DriverItem = {
   id: string;
@@ -73,6 +73,13 @@ export default function DriversPage() {
   const [busFilter, setBusFilter] = useState("");
   const [busOptions, setBusOptions] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [selectedDriverEdit, setSelectedDriverEdit] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDriverData, setEditDriverData] = useState<any>({});
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -101,6 +108,47 @@ export default function DriversPage() {
     await deleteDoc(doc(db, "drivers", id));
   };
 
+  const handleUpdateDriver = async () => {
+    if (!selectedDriverEdit?.id) return;
+
+    try {
+      const newBusId = editDriverData.busId || null;
+
+      await updateDoc(doc(db, "drivers", selectedDriverEdit.id), {
+        name: editDriverData.name || "",
+        phone: editDriverData.phone || "",
+        busId: newBusId,
+      });
+
+      const oldBusId = selectedDriverEdit.oldBusId;
+
+      if (oldBusId && oldBusId !== newBusId) {
+        await updateDoc(doc(db, "buses", oldBusId), {
+          driverId: null,
+        });
+      }
+
+      if (newBusId) {
+        await updateDoc(doc(db, "buses", newBusId), {
+          driverId: selectedDriverEdit.id,
+          routeNo: editDriverData.routeNo || null,
+        });
+      }
+
+      setToast({ message: "Driver updated successfully", type: "success" });
+      setTimeout(() => setToast(null), 2000);
+
+      setIsEditing(false);
+      setSelectedDriverEdit(null);
+      setEditDriverData({});
+      setMenuOpen(null);
+    } catch (err) {
+
+      setToast({ message: "Error updating driver", type: "error" });
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
   useEffect(() => {
     if (!schoolId) return;
 
@@ -125,22 +173,17 @@ export default function DriversPage() {
     return () => unsub();
   }, [schoolId]);
 
-
   const filteredDrivers = useMemo(() => {
     return drivers.filter((d) => {
-      const assignedBus = buses.find(
-        (bus) =>
-          bus.id === d.busId ||
-          bus.driverId === (d.driverId || d.id)
-      );
+
+      const assignedBus = buses.find((bus) => bus.id === d.busId);
 
       const matchesSearch =
         (d.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (d.phone || "").includes(search);
 
       const matchesBus =
-        !busFilter ||
-        assignedBus?.busNo === busFilter;
+        !busFilter || assignedBus?.busNo === busFilter;
 
       return matchesSearch && matchesBus;
     });
@@ -148,6 +191,14 @@ export default function DriversPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 z-50 px-4 py-2 rounded-xl text-white shadow-lg ${toast.type === "success" ? "bg-emerald-600" : "bg-red-600"
+            }`}
+        >
+          {toast.message}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
 
@@ -257,11 +308,22 @@ export default function DriversPage() {
 
                     <button
                       onClick={() => {
-                        setSelectedDriver({ ...driver, assignedBus });
-                        setMenuOpen(null);
+                        setSelectedDriverEdit({
+                          ...driver,
+                          assignedBus,
+                          oldBusId: driver.busId || null,
+                        });
 
-                        // 👉 Later replace this with edit modal
-                        console.log("Edit:", driver.id);
+                        setEditDriverData({
+                          name: driver.name || "",
+                          phone: driver.phone || "",
+                          busId: driver.busId || "",
+                          routeNo: assignedBus?.routeNo || "",
+                          oldBusId: driver.busId || null,
+                        });
+
+                        setIsEditing(true);
+                        setMenuOpen(null);
                       }}
                       className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-50"
                     >
@@ -438,6 +500,88 @@ export default function DriversPage() {
         </div>
       )}
 
+      {selectedDriverEdit && isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 space-y-4">
+
+            <h2 className="text-xl font-bold">Edit Driver</h2>
+
+            <input
+              value={editDriverData.name}
+              onChange={(e) =>
+                setEditDriverData({ ...editDriverData, name: e.target.value })
+              }
+              placeholder="Driver Name"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            <input
+              value={editDriverData.phone}
+              onChange={(e) =>
+                setEditDriverData({ ...editDriverData, phone: e.target.value })
+              }
+              placeholder="Phone"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            <input
+              value={editDriverData.routeNo || ""}
+              onChange={(e) =>
+                setEditDriverData({ ...editDriverData, routeNo: e.target.value })
+              }
+              placeholder="Route No"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            <select
+              value={editDriverData.busId || ""}
+              onChange={(e) =>
+                setEditDriverData({ ...editDriverData, busId: e.target.value })
+              }
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="">Unassigned</option>
+
+              {buses.map((bus) => {
+                const isAssignedToOtherDriver =
+                  !!bus.driverId && bus.driverId !== selectedDriverEdit.id;
+
+                return (
+                  <option
+                    key={bus.id}
+                    value={bus.id}
+                    disabled={isAssignedToOtherDriver}
+                  >
+                    Bus {bus.busNo}{" "}
+                    {isAssignedToOtherDriver ? "(Assigned)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+
+            <div className="flex justify-end gap-2 pt-2">
+
+              <button
+                onClick={() => {
+                  setSelectedDriverEdit(null);
+                  setIsEditing(false);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleUpdateDriver}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg"
+              >
+                Save
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {openDriver && (
         <AddDriver onClose={() => setOpenDriver(false)} />

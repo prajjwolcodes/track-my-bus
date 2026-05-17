@@ -793,7 +793,6 @@ const DriverPage = () => {
                     </CardShell>
                 </div>
 
-                {/* ── RIGHT PANEL ── */}
                 <div className="w-full lg:w-[300px] xl:w-[400px] flex-shrink-0 flex flex-col sm:mt-8 gap-3 p-4 pt-0 lg:pt-4 lg:pl-0 overflow-y-auto">
                     {/* 1. Trip Control */}
                     <CardShell className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
