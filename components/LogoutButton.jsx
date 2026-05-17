@@ -17,15 +17,12 @@ export default function LogoutButton({ onBeforeLogout } = {}) {
                 await onBeforeLogout();
             }
 
-            // 1. Firebase logout
             await signOut(auth);
 
-            // 2. Remove cookie from server
             await fetch("/api/session/logout", {
                 method: "POST",
             });
 
-            // 3. Redirect to login
             router.push("/signin");
             router.refresh();
         } catch (error) {
@@ -36,7 +33,7 @@ export default function LogoutButton({ onBeforeLogout } = {}) {
     return (
         <button
             onClick={handleLogout}
-            className="flex justify-left text-sm font-semibold items-center w-full px-4 py-2 rounded-lg  text-red-500 border border-red-500 hover:text-gray-200 hover:bg-red-500 cursor-pointer transition"
+            className="flex justify-center text-sm font-semibold items-center px-4 py-2 rounded-lg  text-red-800 border border-red-800 hover:text-white  hover:bg-red-800 cursor-pointer transition"
         >
             <LogOut className="inline-block mr-2" size={18} />
             Logout

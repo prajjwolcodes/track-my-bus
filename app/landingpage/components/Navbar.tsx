@@ -41,7 +41,6 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto py-3 flex justify-between items-center">
 
-        {/* LOGO */}
         <Link
           href="#home"
           className={`${libreBaskerville.className} flex items-center gap-2 font-bold text-blue-800 text-xl`}
@@ -50,7 +49,6 @@ export default function Navbar() {
           <span>SmartYatra</span>
         </Link>
 
-        {/* LINKS */}
         <nav className="hidden md:flex gap-8 text-sm text-gray-600">
           {NAV_LINKS.map((item) => (
             <Link
@@ -63,7 +61,6 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* BUTTONS */}
         <div className="flex items-center gap-3">
 
           <Link

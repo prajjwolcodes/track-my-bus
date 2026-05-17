@@ -548,7 +548,7 @@ export default function ParentDashboard(): JSX.Element {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
-            {/* ── Topbar ── */}
+            {/* ── Navbar ── */}
             <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-30">
                 <div className="max-w-full mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">

@@ -1,7 +1,7 @@
 "use client";
 
 import Sidebar from "./components/Sidebar";
-import Topbar from "./components/Navbar";
+import Navbar from "./components/Navbar";
 
 export default function SchoolLayout({
   children,
@@ -15,7 +15,7 @@ export default function SchoolLayout({
 
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar />
+        <Navbar />
 
         <main className="flex-1 overflow-y-auto p-6">
           {children}
