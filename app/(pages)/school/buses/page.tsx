@@ -9,6 +9,7 @@ import {
   where,
   doc,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import {
   BusFront,
@@ -58,6 +59,9 @@ export default function BusesPage() {
   const [openBusModal, setOpenBusModal] = useState(false);
   const [openAssignModal, setOpenAssignModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [selectedBus, setSelectedBus] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editBusData, setEditBusData] = useState<any>({});
 
   useEffect(() => {
     if (!schoolId) return;
@@ -96,6 +100,26 @@ export default function BusesPage() {
     };
   }, [schoolId]);
 
+  const handleUpdateBus = async () => {
+    if (!selectedBus?.id) return;
+
+    try {
+      await updateDoc(doc(db, "buses", selectedBus.id), {
+        busNo: editBusData.busNo || "",
+        plateNo: editBusData.plateNo || "",
+        routeNo: editBusData.routeNo || "",
+        driverId: editBusData.driverId || null,
+      });
+
+      setIsEditing(false);
+      setSelectedBus(null);
+      setEditBusData({});
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const handleDeleteBus = async (id: string) => {
     const confirmDelete = window.confirm("Delete this bus?");
 
@@ -103,7 +127,6 @@ export default function BusesPage() {
 
     await deleteDoc(doc(db, "buses", id));
   };
-
 
   const driverMap = useMemo(() => {
     const map = new Map<string, DriverItem>();
@@ -208,12 +231,12 @@ export default function BusesPage() {
                 {menuOpen === bus.id && (
                   <div className="absolute right-0 mt-2 w-32 bg-white border rounded-xl shadow-lg z-20 overflow-hidden">
 
-                    {/* EDIT */}
                     <button
                       onClick={() => {
+                        setSelectedBus(bus);
+                        setEditBusData(bus);
+                        setIsEditing(true);
                         setMenuOpen(null);
-
-                        console.log("Edit bus:", bus.id);
                       }}
                       className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-50"
                     >
@@ -283,6 +306,90 @@ export default function BusesPage() {
       {openBusModal && <AddBus onClose={() => setOpenBusModal(false)} />}
       {openAssignModal && <BusAssignment onClose={() => setOpenAssignModal(false)} />}
 
+      {selectedBus && isEditing && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 space-y-4">
+
+            <h2 className="text-xl font-bold">Edit Bus</h2>
+
+            {/* Bus No */}
+            <input
+              value={editBusData.busNo || ""}
+              onChange={(e) =>
+                setEditBusData({ ...editBusData, busNo: e.target.value })
+              }
+              placeholder="Bus No"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            {/* Plate No */}
+            <input
+              value={editBusData.plateNo || ""}
+              onChange={(e) =>
+                setEditBusData({ ...editBusData, plateNo: e.target.value })
+              }
+              placeholder="Plate No"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            <input
+              value={editBusData.routeNo || ""}
+              onChange={(e) =>
+                setEditBusData({ ...editBusData, routeNo: e.target.value })
+              }
+              placeholder="Route No"
+              className="w-full p-2 border rounded-lg"
+            />
+
+            <select
+              value={editBusData.driverId || ""}
+              onChange={(e) =>
+                setEditBusData({ ...editBusData, driverId: e.target.value })
+              }
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="">Unassigned</option>
+
+              {drivers.map((d) => {
+                const isAssignedToOtherBus =
+                  buses.some(
+                    (b) => b.driverId === d.id && b.id !== selectedBus.id
+                  );
+
+                return (
+                  <option
+                    key={d.id}
+                    value={d.id}
+                    disabled={isAssignedToOtherBus}
+                  >
+                    {d.name}
+                    {isAssignedToOtherBus ? " (Assigned)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setSelectedBus(null);
+                  setIsEditing(false);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleUpdateBus}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
