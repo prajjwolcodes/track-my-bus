@@ -10,6 +10,8 @@ import {
   onSnapshot,
   query,
   where,
+  doc,
+  deleteDoc,
 } from "firebase/firestore";
 
 import {
@@ -21,6 +23,9 @@ import {
   Route,
   X,
   IdCard,
+  MoreVertical,
+  Pencil,
+  Trash2
 } from "lucide-react";
 
 import AddDriver from "../components/modals/AddDriver";
@@ -62,16 +67,12 @@ export default function DriversPage() {
 
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [buses, setBuses] = useState<BusItem[]>([]);
-
   const [openDriver, setOpenDriver] = useState(false);
-
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
-
   const [search, setSearch] = useState("");
   const [busFilter, setBusFilter] = useState("");
-
   const [busOptions, setBusOptions] = useState<string[]>([]);
-
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -93,6 +94,12 @@ export default function DriversPage() {
     return () => unsub();
   }, [schoolId]);
 
+  const handleDeleteDriver = async (id: string) => {
+    const confirmDelete = window.confirm("Delete this driver?");
+    if (!confirmDelete) return;
+
+    await deleteDoc(doc(db, "drivers", id));
+  };
 
   useEffect(() => {
     if (!schoolId) return;
@@ -226,12 +233,54 @@ export default function DriversPage() {
           return (
             <button
               key={driver.id}
-              onClick={() => setSelectedDriver({
-                ...driver,
-                assignedBus,
-              })}
-              className="bg-white border rounded-2xl p-5 text-left shadow-sm hover:shadow-lg transition hover:-translate-y-1"
+              onClick={() => {
+                if (menuOpen === driver.id) return;
+                setSelectedDriver({ ...driver, assignedBus });
+              }}
+              className="relative bg-white border rounded-2xl p-5 text-left shadow-sm hover:shadow-lg transition hover:-translate-y-1"
             >
+              <div
+                className="absolute top-3 right-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() =>
+                    setMenuOpen(menuOpen === driver.id ? null : driver.id)
+                  }
+                  className="p-1 rounded-lg hover:bg-slate-100"
+                >
+                  <MoreVertical size={18} />
+                </button>
+
+                {menuOpen === driver.id && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white border rounded-xl shadow-lg z-20 overflow-hidden">
+
+                    <button
+                      onClick={() => {
+                        setSelectedDriver({ ...driver, assignedBus });
+                        setMenuOpen(null);
+
+                        // 👉 Later replace this with edit modal
+                        console.log("Edit:", driver.id);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-50"
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleDeleteDriver(driver.id);
+                        setMenuOpen(null);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center gap-3">
 

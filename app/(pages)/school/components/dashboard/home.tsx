@@ -122,13 +122,6 @@ export default function DashboardHome() {
               "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100",
           },
           {
-            label: "Add Bus",
-            icon: BusFront,
-            action: () => setOpenBus(true),
-            color:
-              "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100",
-          },
-          {
             label: "Add Student",
             icon: Users,
             action: () => setOpenStudent(true),

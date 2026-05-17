@@ -3,7 +3,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/app/context/authContext";
 import { db } from "@/firebase/firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
+
 import {
   UserPlus,
   BusFront,
@@ -14,6 +22,9 @@ import {
   User,
   MapPin,
   Search,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import AddStudent from "../components/modals/AddStudent";
 import { Libre_Baskerville, Nunito } from "next/font/google";
@@ -38,7 +49,7 @@ export default function StudentsPage() {
   const [busFilter, setBusFilter] = useState("");
   const [buses, setBuses] = useState<string[]>([]);
   const [openStudent, setOpenStudent] = useState(false);
-
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.schoolId) return;
@@ -61,6 +72,14 @@ export default function StudentsPage() {
       setStudents(data);
     });
   }, [user?.schoolId, busFilter]);
+
+  const handleDeleteStudent = async (id: string) => {
+    const confirmDelete = window.confirm("Delete this student?");
+
+    if (!confirmDelete) return;
+
+    await deleteDoc(doc(db, "students", id));
+  };
 
   useEffect(() => {
     if (!user?.schoolId) return;
@@ -162,9 +181,54 @@ export default function StudentsPage() {
           return (
             <button
               key={s.id}
-              onClick={() => setSelectedStudent(s)}
-              className="bg-white border rounded-2xl p-5 text-left shadow-sm hover:shadow-lg transition hover:-translate-y-1"
+              onClick={() => {
+                if (menuOpen === s.id) return;
+                setSelectedStudent(s);
+              }}
+              className="relative bg-white border rounded-2xl p-5 text-left shadow-sm hover:shadow-lg transition hover:-translate-y-1"
             >
+              {/* ACTION MENU */}
+              <div
+                className="absolute top-3 right-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() =>
+                    setMenuOpen(menuOpen === s.id ? null : s.id)
+                  }
+                  className="p-1 rounded-lg hover:bg-slate-100"
+                >
+                  <MoreVertical size={18} />
+                </button>
+
+                {menuOpen === s.id && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white border rounded-xl shadow-lg z-20 overflow-hidden">
+
+                    <button
+                      onClick={() => {
+                        setSelectedStudent(s);
+                        setMenuOpen(null);
+
+                        console.log("Edit:", s.id);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-50"
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleDeleteStudent(s.id);
+                        setMenuOpen(null);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center gap-3">
 
