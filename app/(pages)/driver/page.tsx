@@ -782,7 +782,7 @@ const DriverPage = () => {
                             disabled={!canRecenter}
                             aria-label="Recenter map"
                             className={cn(
-                                "absolute bottom-8 right-4 z-[1000] inline-flex size-11 items-center justify-center rounded-full border bg-white/95 shadow-lg backdrop-blur transition active:scale-[0.98]",
+                                "absolute bottom-8 right-4 z-1000 inline-flex size-11 items-center justify-center rounded-full border bg-white/95 shadow-lg backdrop-blur transition active:scale-[0.98]",
                                 canRecenter
                                     ? "border-gray-200 text-blue-700 hover:bg-white"
                                     : "cursor-not-allowed border-gray-200 text-gray-300 opacity-70"
@@ -793,7 +793,6 @@ const DriverPage = () => {
                     </CardShell>
                 </div>
 
-                {/* ── RIGHT PANEL ── */}
                 <div className="w-full lg:w-[300px] xl:w-[400px] flex-shrink-0 flex flex-col sm:mt-8 gap-3 p-4 pt-0 lg:pt-4 lg:pl-0 overflow-y-auto">
                     {/* 1. Trip Control */}
                     <CardShell className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
@@ -912,7 +911,7 @@ const DriverPage = () => {
                                             {driverName}
                                         </p>
 
-                                        <p className="mt-1 break-words text-sm text-slate-500">
+                                        <p className="mt-1 wrap-break-word text-sm text-slate-500">
                                             {busLabel} · {routeLabel}
                                         </p>
 
@@ -1007,7 +1006,7 @@ const DriverPage = () => {
 
                         {/* Bus row */}
                         <div className="mx-3 mb-3 flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                            <div className="flex size-[34px] shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+                            <div className="flex size-8.5 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
                                 <Bus size={16} />
                             </div>
 
@@ -1118,7 +1117,7 @@ const DriverPage = () => {
                             </div>
                             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-1">
                                 <div
-                                    className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-700 shadow-sm"
+                                    className="h-full bg-linear-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-700 shadow-sm"
                                     style={{ width: `${pct}%` }}
                                 />
                             </div>

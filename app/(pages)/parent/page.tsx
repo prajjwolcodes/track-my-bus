@@ -33,7 +33,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 import ReactDOMServer from "react-dom/server";
-import { TbBusFilled } from "react-icons/tb";
 
 const ENABLE_BUS_TOWARD_PICKUP_TEST = true;
 const SIMULATION_STEP_METERS = 60; // Increased for faster movement
@@ -249,7 +248,7 @@ const ParentPage = () => {
         if (busNo !== undefined && busNo !== null && String(busNo).trim().length > 0) {
             return String(busNo);
         }
-        return assignedBusLabel;
+        return assignedBusLabel;        
     }, [assignedBusLabel, busInfo?.busNo]);
 
     useEffect(() => {
@@ -259,7 +258,7 @@ const ParentPage = () => {
     useEffect(() => {
         import("leaflet").then((L) => {
             const svgString = ReactDOMServer.renderToString(
-                <TbBusFilled size={26} />
+                <BusFrontIcon size={26} />
 
             );
             const divIcon = L.divIcon({
