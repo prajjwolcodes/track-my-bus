@@ -244,8 +244,10 @@ const AddStudent: React.FC<Props> = ({ onClose }) => {
                                     className="p-3 border rounded-xl"
                                 >
                                     <option value="">Grade</option>
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                                        <option key={g}>Grade {g}</option>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => (
+                                        <option key={g} value={g}>
+                                            Grade {g}
+                                        </option>
                                     ))}
                                 </select>
 
