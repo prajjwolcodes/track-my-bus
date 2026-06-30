@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 
 import { Libre_Baskerville, Nunito } from "next/font/google"
+import { toast } from "sonner"
 
 const libreBaskerville = Libre_Baskerville({
     subsets: ["latin"],
@@ -57,7 +58,7 @@ const Signup = () => {
             !contact ||
             !password
         ) {
-            alert("Please fill all fields")
+            toast.error("Please fill all fields")
             return
         }
 
@@ -106,13 +107,13 @@ const Signup = () => {
                 }
             )
 
-            alert(
+            toast.success(
                 `School registered successfully! ID: ${schoolId}`
             )
 
             router.push("/signin")
         } catch (error: any) {
-            alert(
+            toast.error(
                 error.message ||
                     "Registration failed"
             )

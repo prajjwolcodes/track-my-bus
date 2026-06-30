@@ -7,6 +7,7 @@ import { useAuth } from '@/app/context/authContext'
 import { uploadSignedImage } from '@/utils/uploadSigned'
 import { UserPlus, Plus, Trash2, X, Upload } from 'lucide-react'
 import { Libre_Baskerville, Nunito } from 'next/font/google'
+import { toast } from 'sonner'
 
 const libreBaskerville = Libre_Baskerville({
   subsets: ['latin'],
@@ -95,8 +96,8 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
     e.preventDefault()
 
     if (!schoolId) {
-      return alert('School ID not loaded yet')
-    }
+    return toast.error('School ID not loaded yet')
+}
 
     setLoading(true)
 
@@ -148,11 +149,11 @@ const AddDriver: React.FC<Props> = ({ onClose }) => {
 
       await Promise.all(uploadPromises)
 
-      alert('Drivers added successfully!')
+      toast.success('Drivers added successfully!')
       onClose()
     } catch (err) {
       console.error(err)
-      alert('Failed to save drivers.')
+      toast.error('Failed to save drivers.')
     } finally {
       setLoading(false)
     }

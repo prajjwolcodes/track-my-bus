@@ -44,6 +44,7 @@ import {
 } from "lucide-react"
 
 import { Libre_Baskerville, Nunito } from "next/font/google"
+import { toast } from "sonner"
 
 const libreBaskerville = Libre_Baskerville({
     subsets: ["latin"],
@@ -210,11 +211,8 @@ export default function AuthForm() {
             const snap = await getDocs(q)
 
             if (snap.empty) {
-                alert(
-                    "Account not found. Please contact school admin."
-                )
-
-                return
+                toast.error("Account not found. Please contact school admin.");
+                return;
             }
 
             userDataRef.current = {
@@ -254,7 +252,7 @@ export default function AuthForm() {
                 setStep("mpin")
             }
         } catch (err: any) {
-            alert(err.message)
+            toast.error(err.message)
         } finally {
             setLoading(false)
         }
@@ -370,7 +368,7 @@ export default function AuthForm() {
                     : "/parent"
             )
         } catch (err: any) {
-            alert(err.message)
+            toast.error(err.message)
         } finally {
             setLoading(false)
         }

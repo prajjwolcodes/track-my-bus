@@ -734,7 +734,7 @@ const DriverPage = () => {
                     </div>
 
                     {/* Map Card */}
-                    <CardShell className="relative h-full z-0 flex-1 overflow-hidden !rounded-3xl group">
+                    <CardShell className="relative h-full z-0 flex-1 overflow-hidden rounded-3xl! group">
                         <DriverMapClient
                             mapRef={mapRef}
                             markerIcon={markerIcon}
@@ -747,7 +747,7 @@ const DriverPage = () => {
                         />
 
                         {/* Overlays */}
-                        <div className="absolute z-[1000] top-3 left-4 flex flex-col gap-2">
+                        <div className="absolute z-1000 top-3 left-4 flex flex-col gap-2">
                             <MapPill>
                                 <GpsDot />
                                 {tripActive ? "Live GPS Active" : "GPS Inactive"}
@@ -758,7 +758,7 @@ const DriverPage = () => {
                             </MapPill>
                         </div>
 
-                        <div className="absolute top-4 right-4 z-[1000]">
+                        <div className="absolute top-4 right-4 z-1000">
                             <MapPill>
                                 <Clock size={11} className="text-blue-600" />
                                 {time === null

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { doc, setDoc, Timestamp } from 'firebase/firestore'
 import { db } from '@/firebase/firebase'
 import { useAuth } from '@/app/context/authContext'
+import { toast } from 'sonner'
 import { BusFront, Plus, Trash2, X } from 'lucide-react'
 import { Libre_Baskerville, Nunito } from 'next/font/google'
 
@@ -81,7 +82,7 @@ const AddBus: React.FC<Props> = ({ onClose }) => {
         e.preventDefault()
 
         if (!schoolId) {
-            return alert('School ID not loaded yet')
+            return toast.error('School ID not loaded yet')
         }
 
         setLoading(true)
@@ -128,11 +129,11 @@ const AddBus: React.FC<Props> = ({ onClose }) => {
                 })
             }
 
-            alert('Buses added successfully!')
+            toast.success('Buses added successfully!')
             onClose()
         } catch (err) {
             console.error(err)
-            alert('Failed to save buses.')
+            toast.error('Failed to save buses.')
         } finally {
             setLoading(false)
         }
