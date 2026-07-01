@@ -268,7 +268,6 @@ const DriverPage = () => {
     const tripStartedAtRef = useRef<Date | null>(null);
     const busId = user?.busId ?? null;
     const students = (user?.students ?? []) as StudentPickup[];
-    console.log(students)
 
     const driverName = user?.name ?? "Driver";
     const driverId = user?.driverId ?? user?.uid ?? "";

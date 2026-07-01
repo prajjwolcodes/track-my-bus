@@ -4,8 +4,21 @@ import { useAuth } from "@/app/context/authContext";
 import { db } from "@/firebase/firebase";
 import { BusLocationPayload, listenBusLocation } from "@/firebase/rtdb";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import type { DivIcon, Icon } from "leaflet";
 import { Activity, BusFront, Clock, Route, User } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ReactDOMServer from "react-dom/server";
+import { TbBusFilled } from "react-icons/tb";
+
+const SchoolLiveMap = dynamic(() => import("./SchoolLiveMap.tsx"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full flex items-center justify-center text-sm text-gray-500">
+      Loading map...
+    </div>
+  ),
+});
 
 type BusItem = {
   id: string;
@@ -22,6 +35,24 @@ type DriverItem = {
   name?: string;
 };
 
+type MovingBus = {
+  bus: BusItem;
+  driver: DriverItem | undefined;
+  location: BusLocationPayload & { lat: number; lng: number };
+};
+
+type FocusTarget = {
+  busId: string;
+  lat: number;
+  lng: number;
+  nonce: number;
+};
+
+function toFiniteNumber(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function formatTimestamp(value?: number) {
   if (!value || Number.isNaN(value)) return "--";
   return new Date(value).toLocaleTimeString([], {
@@ -37,6 +68,24 @@ export default function SchoolLivePage() {
   const [buses, setBuses] = useState<BusItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [locations, setLocations] = useState<Record<string, BusLocationPayload | null>>({});
+  const [markerIcon, setMarkerIcon] = useState<Icon | DivIcon | null>(null);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    import("leaflet").then((L) => {
+      const svgString = ReactDOMServer.renderToString(<TbBusFilled size={26} />);
+
+      const icon = L.divIcon({
+        html: svgString,
+        className: "lucide-marker",
+        iconSize: [42, 42],
+        iconAnchor: [21, 21],
+      });
+
+      setMarkerIcon(icon);
+    });
+  }, []);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -105,36 +154,76 @@ export default function SchoolLivePage() {
     [locations]
   );
 
+  const movingBuses = useMemo<MovingBus[]>(() => {
+    return buses
+      .map((bus) => {
+        const location = locations[bus.id];
+        if (!location || location.tripActive !== true) return null;
+
+        const lat = toFiniteNumber((location as { lat?: unknown }).lat);
+        const lng = toFiniteNumber((location as { lng?: unknown }).lng);
+
+        if (lat === null || lng === null) return null;
+
+        const assignedDriver = drivers.find(
+          (driver) => driver.busId === bus.id || driver.driverId === bus.driverId
+        );
+
+        return {
+          bus,
+          driver: assignedDriver,
+          location: {
+            ...location,
+            lat,
+            lng,
+          },
+        };
+      })
+      .filter((entry): entry is MovingBus => entry !== null);
+  }, [buses, drivers, locations]);
+
+  const movingBusById = useMemo(() => {
+    return new Map(movingBuses.map((entry) => [entry.bus.id, entry]));
+  }, [movingBuses]);
+
+  function handleLocateBus(busId: string) {
+    const movingBus = movingBusById.get(busId);
+    if (!movingBus) return;
+
+    setFocusTarget({
+      busId,
+      lat: movingBus.location.lat,
+      lng: movingBus.location.lng,
+      nonce: Date.now(),
+    });
+
+    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Live Bus Tracking</h1>
-          <p className="text-gray-500 mt-1">
-            Monitor trip activity and latest GPS updates for each bus.
-          </p>
+    <div className="space-y-8 h-full">
+
+
+      <div ref={mapSectionRef} className="bg-white h-full rounded-3xl border shadow-sm overflow-hidden">
+        <div className="p-6 border-b flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">School Live Map</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Showing only buses that are currently moving.
+            </p>
+          </div>
+          <span className="text-sm font-semibold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700">
+            {movingBuses.length} Moving
+          </span>
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 px-4 py-2 text-sm font-semibold">
-          <Activity size={16} />
-          Real-time
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">Fleet Size</p>
-          <h2 className="text-3xl font-bold mt-2">{buses.length}</h2>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">Active Trips</p>
-          <h2 className="text-3xl font-bold mt-2">{activeTrips}</h2>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border">
-          <p className="text-sm text-gray-500">GPS Reporting</p>
-          <h2 className="text-3xl font-bold mt-2">{reportingBuses}</h2>
+        <div className="h-full w-full">
+          <SchoolLiveMap
+            movingBuses={movingBuses}
+            markerIcon={markerIcon}
+            focusTarget={focusTarget}
+            formatTimestamp={formatTimestamp}
+          />
         </div>
       </div>
 
@@ -144,6 +233,7 @@ export default function SchoolLivePage() {
           const assignedDriver = drivers.find(
             (driver) => driver.busId === bus.id || driver.driverId === bus.driverId
           );
+          const isMoving = movingBusById.has(bus.id);
 
           return (
             <div key={bus.id} className="bg-white rounded-3xl border shadow-sm p-6">
@@ -156,11 +246,10 @@ export default function SchoolLivePage() {
                 </div>
 
                 <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    location?.tripActive
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${location?.tripActive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-gray-100 text-gray-600"
+                    }`}
                 >
                   {location?.tripActive ? "In Trip" : "Idle"}
                 </span>
@@ -199,20 +288,21 @@ export default function SchoolLivePage() {
                     {formatTimestamp(location?.timestamp)}
                   </span>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleLocateBus(bus.id)}
+                  disabled={!isMoving}
+                  className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  Locate Bus in map
+                </button>
               </div>
             </div>
           );
         })}
       </div>
 
-      {buses.length === 0 && (
-        <div className="bg-white border rounded-3xl p-12 text-center">
-          <h3 className="text-xl font-semibold text-gray-800">No Buses Found</h3>
-          <p className="text-gray-500 mt-2">
-            Add buses first to monitor live movements.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

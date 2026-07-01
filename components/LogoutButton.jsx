@@ -33,7 +33,7 @@ export default function LogoutButton({ onBeforeLogout } = {}) {
     return (
         <button
             onClick={handleLogout}
-            className="flex justify-center text-sm font-semibold items-center px-4 py-2 rounded-lg  text-red-800 border border-red-800 hover:text-white  hover:bg-red-800 cursor-pointer transition"
+            className="flex w-full justify-center text-sm font-semibold items-center px-4 py-2 rounded-lg  text-red-800 border border-red-800 hover:text-white  hover:bg-red-800 cursor-pointer transition"
         >
             <LogOut className="inline-block mr-2" size={18} />
             Logout

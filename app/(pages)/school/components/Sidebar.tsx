@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/app/context/authContext";
+import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,6 +15,9 @@ import {
   ChevronRight,
   X,
   UserRound,
+  UserCircle2,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -34,9 +39,14 @@ const nunito = Nunito({
 
 const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (open: boolean) => void }) => {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const [collapsed, setCollapsed] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const accountRef = useRef<HTMLDivElement | null>(null);
+
+  const schoolName = user?.name?.split(" ")[0] || "School";
 
   const nav = [
     {
@@ -69,6 +79,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
       href: "/school/live",
       icon: Activity,
     },
+
   ];
 
   useEffect(() => {
@@ -96,6 +107,25 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
     };
   }, [mobileOpen]);
 
+  useEffect(() => {
+    function handleAccountOutsideClick(event: MouseEvent) {
+      if (
+        accountRef.current &&
+        !accountRef.current.contains(event.target as Node)
+      ) {
+        setAccountOpen(false);
+      }
+    }
+
+    if (accountOpen) {
+      document.addEventListener("mousedown", handleAccountOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleAccountOutsideClick);
+    };
+  }, [accountOpen]);
+
   return (
     <>
       {mobileOpen && (
@@ -119,16 +149,14 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
           shadow-2xl
           transition-all duration-300 ease-in-out
 
-          ${
-            collapsed
-              ? "w-22"
-              : "w-72"
+          ${collapsed
+            ? "w-22"
+            : "w-72"
           }
 
-          ${
-            mobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
+          ${mobileOpen
+            ? "translate-x-0"
+            : "-translate-x-full lg:translate-x-0"
           }
         `}
       >
@@ -138,10 +166,9 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
             flex items-center
             border-b border-blue-900/40
             px-4 py-5
-            ${
-              collapsed
-                ? "justify-center"
-                : "justify-between"
+            ${collapsed
+              ? "justify-center"
+              : "justify-between"
             }
           `}
         >
@@ -231,21 +258,19 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
                   rounded-2xl
                   transition-all duration-200
 
-                  ${
-                    collapsed
-                      ? "justify-center px-3 py-4"
-                      : "gap-4 px-4 py-3.5"
+                  ${collapsed
+                    ? "justify-center px-3 py-4"
+                    : "gap-4 px-4 py-3.5"
                   }
 
-                  ${
-                    active
-                      ? `
+                  ${active
+                    ? `
                         bg-blue-500/15
                         text-blue-100
                         border border-blue-400/20
                         shadow-lg shadow-blue-950/30
                       `
-                      : `
+                    : `
                         text-blue-100/70
                         hover:bg-white/10
                         hover:text-white
@@ -312,7 +337,71 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
               </Link>
             );
           })}
+
+
         </nav>
+
+        <div className="border-t border-blue-900/40 p-3" ref={accountRef}>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAccountOpen((prev) => !prev)}
+              className={`
+                w-full
+                rounded-2xl
+                bg-white/10
+                hover:bg-white/20
+                text-blue-50
+                transition
+                ${collapsed ? "p-2.5 flex justify-center" : "px-3 py-2.5 flex items-center justify-between"}
+              `}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <UserCircle2 size={24} className="shrink-0" />
+
+                {!collapsed && (
+                  <div className="min-w-0 text-left">
+                    <p className={`truncate text-sm font-semibold ${nunito.className}`}>
+                      {schoolName}
+                    </p>
+                    <p className={`truncate text-xs text-blue-200/80 ${nunito.className}`}>
+                      School Account
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {!collapsed && (
+                accountOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+              )}
+            </button>
+
+            {accountOpen && (
+              <div
+                className={`
+                  absolute bottom-full mb-2
+                  rounded-2xl border border-blue-800/60
+                  bg-[#06264F]
+                  shadow-2xl
+                  p-3
+                  z-50
+                  ${collapsed ? "left-full ml-2 w-56" : "left-0 right-0"}
+                `}
+              >
+                <div className="mb-3 border-b border-blue-900/50 pb-3">
+                  <p className={`text-sm font-semibold text-white ${nunito.className}`}>
+                    {user?.name || "School Account"}
+                  </p>
+                  <p className={`text-xs text-blue-200/80 ${nunito.className}`}>
+                    {user?.email || "No email"}
+                  </p>
+                </div>
+
+                <LogoutButton />
+              </div>
+            )}
+          </div>
+        </div>
       </aside>
 
       <button
