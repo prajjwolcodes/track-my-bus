@@ -8,6 +8,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { toast } from "sonner";
 
 type BusItem = {
   id: string;
@@ -40,11 +41,14 @@ export default function AddRoute({ schoolId, buses, onClose }: Props) {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!schoolId) return;
+    if (!schoolId) {
+      toast.error("School ID not loaded yet");
+      return;
+    }
 
     const normalizedRouteNo = routeNo.trim();
     if (!normalizedRouteNo) {
-      alert("Route number is required");
+      toast.error("Route number is required");
       return;
     }
 
@@ -77,7 +81,7 @@ export default function AddRoute({ schoolId, buses, onClose }: Props) {
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to create route");
+      toast.error("Failed to create route");
     } finally {
       setLoading(false);
     }

@@ -588,7 +588,6 @@ export default function ParentDashboard(): JSX.Element {
 
             {/* ── Page Body ── */}
             <main className="max-w-full mx-auto px-4 py-4">
-                {/* Alert banner */}
                 <div className="mb-4">
                     <AlertBanner />
                 </div>

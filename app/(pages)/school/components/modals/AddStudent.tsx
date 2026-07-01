@@ -17,6 +17,7 @@ import {
 import { Users, Plus, Trash2, X, Upload } from "lucide-react";
 import { Libre_Baskerville, Nunito } from "next/font/google";
 import dynamic from "next/dynamic";
+import { toast } from "sonner";
 
 const LocationPicker = dynamic(() => import("../LocationPicker"), {
     ssr: false,
@@ -116,7 +117,10 @@ const AddStudent: React.FC<Props> = ({ onClose }) => {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (!schoolId) return;
+        if (!schoolId) {
+            toast.error("School ID not loaded yet");
+            return;
+        }
 
         setLoading(true);
 
@@ -165,11 +169,11 @@ const AddStudent: React.FC<Props> = ({ onClose }) => {
             await Promise.all(uploads);
             await batch.commit();
 
-            alert("Students added successfully!");
+            toast.success("Students added successfully!");
             onClose();
         } catch (err) {
             console.error(err);
-            alert("Failed to add students");
+            toast.error("Failed to add students");
         } finally {
             setLoading(false);
         }
