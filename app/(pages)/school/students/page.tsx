@@ -168,7 +168,7 @@ export default function StudentsPage() {
   }, [students, search]);
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-8 mx-auto space-y-8 bg-slate-50 min-h-screen">
 
       <div className="flex flex-wrap items-center justify-between gap-4">
 
@@ -240,7 +240,7 @@ export default function StudentsPage() {
             s.photoUrl;
 
           return (
-            <button
+            <div
               key={s.id}
               onClick={() => {
                 if (menuOpen === s.id) return;
@@ -343,7 +343,7 @@ export default function StudentsPage() {
 
               </div>
 
-            </button>
+            </div>
           );
         })}
       </div>

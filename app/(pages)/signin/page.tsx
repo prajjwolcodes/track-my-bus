@@ -396,19 +396,19 @@ export default function AuthForm() {
     }
 
     const setupRecaptcha = () => {
-    if (typeof window === "undefined") return
+        if (typeof window === "undefined") return
 
-    if (!(window as any).recaptchaVerifier) {
-        (window as any).recaptchaVerifier =
-            new RecaptchaVerifier(auth, "recaptcha-container", {
-                size: "invisible",
-                callback: () => {
-                },
-            })
+        if (!(window as any).recaptchaVerifier) {
+            (window as any).recaptchaVerifier =
+                new RecaptchaVerifier(auth, "recaptcha-container", {
+                    size: "invisible",
+                    callback: () => {
+                    },
+                })
 
-        ;(window as any).recaptchaVerifier.render()
+                ; (window as any).recaptchaVerifier.render()
+        }
     }
-}
     return (
         <div className="min-h-screen bg-[#F5F7FB] flex items-center justify-center px-4 py-6">
 
@@ -648,12 +648,6 @@ export default function AuthForm() {
                                         </label>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="text-xs font-semibold text-[#0041A3]"
-                                    >
-                                        Need Help?
-                                    </button>
                                 </div>
 
                                 {/* BUTTON */}

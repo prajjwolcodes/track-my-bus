@@ -651,14 +651,14 @@ const DriverPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'DM Sans', 'Geist', sans-serif" }}>
             {/* Top Bar */}
-            <header className="flex items-center justify-between px-5 py-5 border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+            <header className="flex items-center justify-between px-5 py-5 border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 ">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center ">
                         <BusFrontIcon size={24} className="" />
                     </div>
                     <div>
-                        <p className="text-[13px] font-bold text-gray-900 leading-none">Bus Tracker</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">School Transport System</p>
+                        <p className="text-base font-bold text-gray-900 leading-none">Smart Yatra</p>
+                        {/* <p className="text-[10px] text-gray-500 mt-0.5">School Transport System</p> */}
                     </div>
                 </div>
                 <div className="flex items-center gap-3">

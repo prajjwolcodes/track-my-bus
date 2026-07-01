@@ -248,7 +248,7 @@ const ParentPage = () => {
         if (busNo !== undefined && busNo !== null && String(busNo).trim().length > 0) {
             return String(busNo);
         }
-        return assignedBusLabel;        
+        return assignedBusLabel;
     }, [assignedBusLabel, busInfo?.busNo]);
 
     useEffect(() => {
@@ -576,8 +576,8 @@ const ParentPage = () => {
                         <BusFrontIcon size={24} />
                     </div>
                     <div>
-                        <p className="text-[13px] font-bold leading-none text-gray-900">Bus Tracker</p>
-                        <p className="mt-0.5 text-[10px] text-gray-500">Parent dashboard</p>
+                        <p className="text-base  font-bold text-gray-900 leading-none">Smart Yatra</p>
+                        {/* <p className="mt-0.5 text-[10px] text-gray-500">Parent dashboard</p> */}
                     </div>
                 </div>
 

@@ -70,11 +70,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobile
       icon: Users,
     },
     {
-      name: "Routes",
-      href: "/school/routes",
-      icon: Route,
-    },
-    {
       name: "Live Tracking",
       href: "/school/live",
       icon: Activity,

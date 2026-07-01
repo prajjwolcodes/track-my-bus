@@ -204,18 +204,19 @@ export default function SchoolLivePage() {
     <div className="space-y-8 h-full">
 
 
-      <div ref={mapSectionRef} className="bg-white h-full rounded-3xl border shadow-sm overflow-hidden">
-        <div className="p-6 border-b flex items-center justify-between gap-3">
+      <div ref={mapSectionRef} className="bg-white relative h-full rounded-3xl border shadow-sm overflow-hidden">
+        {/* <div className="p-6 border-b flex items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">School Live Map</h2>
             <p className="text-sm text-gray-500 mt-1">
               Showing only buses that are currently moving.
             </p>
           </div>
-          <span className="text-sm font-semibold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700">
-            {movingBuses.length} Moving
-          </span>
-        </div>
+       
+        </div> */}
+        <span className="text-sm z-1000 absolute top-6 right-6 font-semibold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700">
+          {movingBuses.length} Moving
+        </span>
 
         <div className="h-full w-full">
           <SchoolLiveMap

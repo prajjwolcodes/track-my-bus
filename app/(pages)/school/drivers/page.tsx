@@ -190,7 +190,7 @@ export default function DriversPage() {
   }, [drivers, buses, search, busFilter]);
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
+    <div className="space-y-8 p-4 md:p-8 bg-slate-50 min-h-screen">
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 px-4 py-2 rounded-xl text-white shadow-lg ${toast.type === "success" ? "bg-emerald-600" : "bg-red-600"
@@ -282,7 +282,7 @@ export default function DriversPage() {
             driver.photoUrl;
 
           return (
-            <button
+            <div
               key={driver.id}
               onClick={() => {
                 if (menuOpen === driver.id) return;
@@ -403,7 +403,7 @@ export default function DriversPage() {
                   </span>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
 
