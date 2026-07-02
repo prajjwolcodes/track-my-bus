@@ -51,7 +51,7 @@ export default function DashboardHome() {
   }, [schoolId]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-4 space-y-8">
       <header>
         <h1 className={`text-2xl md:text-3xl font-bold text-slate-900 ${libreBaskerville.className}`}>
           Good to see you, {user?.name || "Administrator"}👋

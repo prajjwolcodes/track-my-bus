@@ -39,13 +39,13 @@ export default function Navbar() {
         : "bg-[#f5f3ea]"
         }`}
     >
-      <div className="max-w-7xl mx-auto py-3 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-2 py-3 flex justify-between items-center">
 
         <Link
           href="#home"
           className={`${libreBaskerville.className} flex items-center gap-2 font-bold text-blue-800 text-xl`}
         >
-          <Bus className="w-6 h-6" />
+          {/* <Bus className="w-6 h-6" /> */}
           <span>SmartYatra</span>
         </Link>
 

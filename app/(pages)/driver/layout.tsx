@@ -1,9 +1,6 @@
 "use client";
 
 import { useAuth } from "@/app/context/authContext";
-import LogoutButton from "@/components/LogoutButton";
-import { LayoutDashboard, Map as MapIcon, Users } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function Layout({
