@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
 
 import {
     RecaptchaVerifier,
@@ -29,18 +29,17 @@ import { z } from "zod"
 import { hashMPIN } from "@/lib/hashMpin"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 
 import {
-    Loader2,
-    Mail,
-    Lock,
     Eye,
     EyeOff,
-    HeadphonesIcon,
-    Phone,
+    Loader2,
+    Lock,
+    Mail,
+    Phone
 } from "lucide-react"
 
 import { Libre_Baskerville, Nunito } from "next/font/google"

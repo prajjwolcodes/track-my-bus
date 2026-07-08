@@ -260,9 +260,6 @@ export default function BusesPage() {
                   <h3 className={`${libreBaskerville.className} text-xl font-bold text-slate-900`}>
                     Bus {bus.busNo || "--"}
                   </h3>
-                  <p className={`${nunito.className} text-xs text-slate-500`}>
-                    Route {bus.routeNo || "N/A"}
-                  </p>
                 </div>
               </div>
 
@@ -327,15 +324,6 @@ export default function BusesPage() {
                 setEditBusData({ ...editBusData, plateNo: e.target.value })
               }
               placeholder="Plate No"
-              className="w-full p-2 border rounded-lg"
-            />
-
-            <input
-              value={editBusData.routeNo || ""}
-              onChange={(e) =>
-                setEditBusData({ ...editBusData, routeNo: e.target.value })
-              }
-              placeholder="Route No"
               className="w-full p-2 border rounded-lg"
             />
 

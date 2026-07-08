@@ -64,11 +64,6 @@ const ParentMapClient = ({
                             </div>
                         </Popup>
                     </Marker>
-                    {/* <Circle
-                        center={[pickupLocation.lat, pickupLocation.lng]}
-                        radius={200}
-                    pathOptions={{ color: "#2563eb", fillColor: "#93c5fd", fillOpacity: 0.2 }}
-                    /> */}
                 </>
             )}
 

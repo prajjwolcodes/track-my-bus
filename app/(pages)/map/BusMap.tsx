@@ -33,7 +33,6 @@ const BusMap = ({ busId }: BusMapProps) => {
             dragend() {
                 const marker = markerRef.current
                 if (marker != null) {
-                    console.log(marker)
                     const newPos = {
                         lat: marker.getLatLng().lat,
                         lng: marker.getLatLng().lng,
@@ -41,7 +40,6 @@ const BusMap = ({ busId }: BusMapProps) => {
                         timestamp: Date.now()
                     }
                     setPosition(newPos)
-                    console.log("Marker dragged to: ", newPos)
                 }
             },
         }),

@@ -2,10 +2,12 @@
 
 import { useAuth } from "@/app/context/authContext";
 import { db } from "@/firebase/firebase";
+import { realTimeDB } from "@/firebase/firebase";
 import { listenBusLocation, setBusTripActive, updateBusLocation } from "@/firebase/rtdb";
 import { haversineDistanceMeters } from "@/lib/haversine";
 import { cn } from "@/lib/utils";
 import { doc, getDoc } from "firebase/firestore";
+import { get, ref } from "firebase/database";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactDOMServer from "react-dom/server";
 import { TbBusFilled } from "react-icons/tb";
@@ -41,6 +43,7 @@ import {
     Phone,
     Play,
     Route,
+    School,
     ShieldCheck,
     Signal,
     Square,
@@ -80,6 +83,7 @@ type DriverUser = {
     photo?: string | null;
     driverId?: string;
     routeNo?: string | number | null;
+    schoolName?: string | null;
 };
 
 type BusInfo = {
@@ -96,6 +100,8 @@ const DriverMapClient = dynamic(() => import("./DriverMap"), {
 
 const DEFAULT_PICKUP_PASS_RADIUS_METERS = 80;
 const MAX_PICKUP_PASS_RADIUS_METERS = 200;
+const DEFAULT_SIMULATION_BASE: Coordinate = { lat: 27.7172, lng: 85.324 };
+const SIMULATION_STEP_DURATION_MS = 13000;
 
 function clampNumber(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, value));
@@ -219,32 +225,40 @@ function animateCoordinate(
     start: Coordinate,
     end: Coordinate,
     onFrame: (value: Coordinate) => void,
-    duration = 900
+    duration = 900,
+    shouldCancel?: () => boolean
 ) {
-    const startTime = performance.now();
-    let frameId = 0;
+    return new Promise<void>((resolve) => {
+        const startTime = performance.now();
 
-    const step = (time: number) => {
-        const progress = Math.min((time - startTime) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
+        const step = (time: number) => {
+            if (shouldCancel?.()) {
+                resolve();
+                return;
+            }
 
-        onFrame({
-            lat: start.lat + (end.lat - start.lat) * eased,
-            lng: start.lng + (end.lng - start.lng) * eased,
-        });
+            const progress = Math.min((time - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
 
-        if (progress < 1) {
-            frameId = requestAnimationFrame(step);
-        }
-    };
+            onFrame({
+                lat: start.lat + (end.lat - start.lat) * eased,
+                lng: start.lng + (end.lng - start.lng) * eased,
+            });
 
-    frameId = requestAnimationFrame(step);
-    return frameId;
+            if (progress < 1) {
+                requestAnimationFrame(step);
+                return;
+            }
+
+            resolve();
+        };
+
+        requestAnimationFrame(step);
+    });
 }
 
 const DriverPage = () => {
     const { user: rawUser } = useAuth();
-    console.log(rawUser)
     const user = rawUser as unknown as DriverUser | null;
     const [position, setPosition] = useState<Position | null>(null);
     const [started, setStarted] = useState(false);
@@ -254,10 +268,12 @@ const DriverPage = () => {
     const [displayPosition, setDisplayPosition] = useState<Position | null>(null);
     const [tripStartedAt, setTripStartedAt] = useState<Date | null>(null);
     const [tripActionLoading, setTripActionLoading] = useState(false);
+    const [simulationActionLoading, setSimulationActionLoading] = useState(false);
     const [time, setTime] = useState<Date | null>(null);
     const [busInfo, setBusInfo] = useState<BusInfo | null>(null);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [simulationActive, setSimulationActive] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const mapRef = useRef<MAP | null>(null);
     const displayPositionRef = useRef<Coordinate | null>(null);
@@ -266,6 +282,9 @@ const DriverPage = () => {
     const didAutoResumeRef = useRef(false);
     const hasRecenteredOnTripStartRef = useRef(false);
     const tripStartedAtRef = useRef<Date | null>(null);
+    const simulationActiveRef = useRef(false);
+    const simulationRunIdRef = useRef(0);
+    const simulationEchoTimestampRef = useRef<number | null>(null);
     const busId = user?.busId ?? null;
     const students = (user?.students ?? []) as StudentPickup[];
 
@@ -274,6 +293,7 @@ const DriverPage = () => {
     const driverAvatar = getInitials(driverName);
     const driverPhotoUrl = user?.photo ?? ((rawUser as any)?.photoURL ?? null);
     const driverEmail = rawUser?.email ?? null;
+    const schoolName = user?.schoolName?.trim?.() ? user.schoolName : "School";
     const driverPhone =
         (user as any)?.phone ??
         (user as any)?.phoneNumber ??
@@ -337,6 +357,10 @@ const DriverPage = () => {
     useEffect(() => {
         tripStartedAtRef.current = tripStartedAt;
     }, [tripStartedAt]);
+
+    useEffect(() => {
+        simulationActiveRef.current = simulationActive;
+    }, [simulationActive]);
 
     useEffect(() => {
         let cancelled = false;
@@ -408,6 +432,11 @@ const DriverPage = () => {
             return;
         }
 
+        if (simulationActiveRef.current) {
+            toast.warning("Stop the simulation before starting live GPS");
+            return;
+        }
+
         if (watchIdRef.current !== null) {
             toast.warning("Trip already started");
             return;
@@ -425,7 +454,131 @@ const DriverPage = () => {
         beginLocationWatch();
     }
 
+    async function startSimulation() {
+        if (!busId) {
+            toast.error("No bus assigned");
+            return;
+        }
+
+        if (started || tripActionLoading || simulationActionLoading || simulationActiveRef.current) {
+            toast.warning("Stop the current trip before starting a simulation");
+            return;
+        }
+
+        if (studentPickupMarkers.length === 0) {
+            toast.warning("Add students with pickup locations before starting the simulation");
+            return;
+        }
+
+        setSimulationActionLoading(true);
+        simulationActiveRef.current = true;
+        setSimulationActive(true);
+        setStarted(true);
+        setTrackingPhase("tracking");
+        setError(null);
+        hasFirstFixRef.current = true;
+
+        const startedAt = new Date();
+        tripStartedAtRef.current = startedAt;
+        setTripStartedAt(startedAt);
+
+        const runId = simulationRunIdRef.current + 1;
+        simulationRunIdRef.current = runId;
+
+        const syncBusLocation = (coord: Coordinate) => {
+            const nextPosition = {
+                lat: coord.lat,
+                lng: coord.lng,
+                accuracy: 8,
+                timestamp: Date.now(),
+            };
+
+            simulationEchoTimestampRef.current = nextPosition.timestamp;
+            setPosition(nextPosition);
+            setDisplayPosition(nextPosition);
+
+            return updateBusLocation(busId, {
+                ...nextPosition,
+                tripActive: true,
+            });
+        };
+
+        try {
+            await setBusTripActive(busId, true);
+
+            const currentSnapshot = await get(ref(realTimeDB, `location/bus/${busId}`));
+            const currentValue = currentSnapshot.val() as Partial<Position> | null;
+            const currentLat = typeof currentValue?.lat === "number" ? currentValue.lat : null;
+            const currentLng = typeof currentValue?.lng === "number" ? currentValue.lng : null;
+            const fallbackBase =
+                displayPositionRef.current ??
+                (position ? { lat: position.lat, lng: position.lng } : DEFAULT_SIMULATION_BASE);
+
+            const basePosition =
+                currentLat !== null && currentLng !== null
+                    ? { lat: currentLat, lng: currentLng }
+                    : fallbackBase;
+
+            const routeStops = studentPickupMarkers.map((student) => student.pickupLocation);
+            const travelPath = [...routeStops, basePosition];
+            let currentPoint = basePosition;
+
+            await syncBusLocation(currentPoint);
+
+            for (const nextStop of travelPath) {
+                if (simulationRunIdRef.current !== runId || !simulationActiveRef.current) {
+                    return;
+                }
+
+                await animateCoordinate(
+                    currentPoint,
+                    nextStop,
+                    (frame) => {
+                        void syncBusLocation(frame);
+                    },
+                    SIMULATION_STEP_DURATION_MS,
+                    () => simulationRunIdRef.current !== runId || !simulationActiveRef.current
+                );
+
+                currentPoint = nextStop;
+            }
+
+            if (simulationRunIdRef.current !== runId) {
+                return;
+            }
+
+            await setBusTripActive(busId, false);
+            simulationActiveRef.current = false;
+            setSimulationActive(false);
+            simulationEchoTimestampRef.current = null;
+            setStarted(false);
+            setTrackingPhase("idle");
+            hasFirstFixRef.current = false;
+            didAutoResumeRef.current = false;
+            tripStartedAtRef.current = null;
+            setTripStartedAt(null);
+            toast.success("Simulation completed");
+        } catch (err) {
+            console.error(err);
+            simulationActiveRef.current = false;
+            setSimulationActive(false);
+            simulationEchoTimestampRef.current = null;
+            setStarted(false);
+            setTrackingPhase("idle");
+            setError("Simulation failed to start");
+            toast.error("Unable to start simulation");
+        } finally {
+            setSimulationActionLoading(false);
+        }
+    }
+
     async function stopTrip() {
+        simulationRunIdRef.current += 1;
+        simulationActiveRef.current = false;
+        setSimulationActive(false);
+        setSimulationActionLoading(false);
+        simulationEchoTimestampRef.current = null;
+
         if (watchIdRef.current !== null) {
             navigator.geolocation.clearWatch(watchIdRef.current);
             watchIdRef.current = null;
@@ -456,6 +609,10 @@ const DriverPage = () => {
             const isTripActive = data?.tripActive === true;
             const hasCoords = typeof data?.lat === "number" && typeof data?.lng === "number";
 
+            if (simulationActiveRef.current) {
+                return;
+            }
+
             if (isTripActive) {
                 const statusUpdatedAt = (data as (typeof data & { statusUpdatedAt?: unknown }))?.statusUpdatedAt;
                 if (!tripStartedAtRef.current && typeof statusUpdatedAt === "number") {
@@ -466,6 +623,14 @@ const DriverPage = () => {
             }
 
             if (hasCoords) {
+                if (
+                    simulationActiveRef.current &&
+                    simulationEchoTimestampRef.current !== null &&
+                    data?.timestamp === simulationEchoTimestampRef.current
+                ) {
+                    return;
+                }
+
                 const nextPos = {
                     lat: data.lat,
                     lng: data.lng,
@@ -481,6 +646,10 @@ const DriverPage = () => {
             }
 
             if (isTripActive && watchIdRef.current === null) {
+                if (simulationActiveRef.current) {
+                    return;
+                }
+
                 setStarted(true);
                 setTrackingPhase(hasFirstFixRef.current ? "tracking" : "locating");
                 beginLocationWatch();
@@ -629,7 +798,8 @@ const DriverPage = () => {
 
     const tripActive = started;
     const isLocating = trackingPhase === "locating";
-    const actionLoading = tripActionLoading || isLocating;
+    const actionLoading = tripActionLoading || simulationActionLoading || isLocating;
+    const hasSimulationStops = studentPickupMarkers.length > 0;
 
     const checked = passedPickupLocations;
     const total = Math.max(totalPickupLocations, 0);
@@ -654,11 +824,10 @@ const DriverPage = () => {
             <header className="flex items-center justify-between px-5 py-5 border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 ">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center ">
-                        <BusFrontIcon size={24} className="" />
+                        <BusFrontIcon size={24} />
                     </div>
                     <div>
                         <p className="text-base font-bold text-gray-900 leading-none">Smart Yatra</p>
-                        {/* <p className="text-[10px] text-gray-500 mt-0.5">School Transport System</p> */}
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -730,6 +899,11 @@ const DriverPage = () => {
                                 <span className="text-emerald-600 font-semibold">Trip #{busLabel}</span>
                             </>
                         ) : null}
+
+                        <div className="ml-auto flex items-center gap-1.5">
+                            <School size={12} className="text-blue-600" />
+                            <span className="font-semibold text-gray-900">{schoolName || "School"}</span>
+                        </div>
                     </div>
 
                     {/* Map Card */}
@@ -823,7 +997,7 @@ const DriverPage = () => {
                         </div>
 
                         {/* Body */}
-                        <div className="px-4 pb-4 pt-3.5">
+                        <div className="px-4 pb-4">
                             <button
                                 onClick={async () => {
                                     if (actionLoading) return;
@@ -853,7 +1027,35 @@ const DriverPage = () => {
                                 ) : (
                                     <Play size={14} fill="currentColor" />
                                 )}
-                                {actionLoading ? "Processing…" : tripActive ? "Stop trip" : "Start trip"}
+                                {actionLoading
+                                    ? "Processing…"
+                                    : tripActive
+                                        ? simulationActive
+                                            ? "Stop simulation"
+                                            : "Stop trip"
+                                        : "Start trip"}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (actionLoading || tripActive || simulationActiveRef.current) return;
+                                    await startSimulation();
+                                }}
+                                disabled={actionLoading || tripActive || !hasSimulationStops}
+                                className={cn(
+                                    "mt-3 flex w-full items-center justify-center gap-2 rounded-[10px] border py-2 text-[13px] font-medium tracking-[0.01em] transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
+                                    hasSimulationStops
+                                        ? "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
+                                        : "border-slate-200 bg-slate-100 text-slate-400"
+                                )}
+                            >
+                                {simulationActionLoading ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                    <Play size={14} fill="currentColor" />
+                                )}
+                                {simulationActionLoading ? "Simulating…" : "Start simulation"}
                             </button>
 
                             {error && !actionLoading ? (

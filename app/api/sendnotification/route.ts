@@ -53,13 +53,26 @@ export async function POST(request: Request) {
 
 
         if (!uniqueTokens.length) {
+            await adminDb.collection("busNotifications").add({
+                busId,
+                title: title ?? "🟢 App Open: Bus is very close!",
+                body: body ?? "Get ready. Your bus is arriving now.",
+                data: {
+                    busId,
+                    ...data,
+                },
+                recipientRole: "parent",
+                createdAt: Date.now(),
+            });
+
             return Response.json(
                 {
-                    message: "No logged-in parent tokens found for this bus",
+                    message: "No FCM tokens found. Saved a fallback bus notification instead.",
                     busId,
                     recipientCount: 0,
+                    fallbackUsed: true,
                 },
-                { status: 404 }
+                { status: 200 }
             );
         }
 
