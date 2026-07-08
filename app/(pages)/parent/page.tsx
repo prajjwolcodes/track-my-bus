@@ -26,6 +26,7 @@ import {
     MapPin,
     PhoneCall,
     RulerDimensionLine,
+    School,
     Signal,
     Users
 } from "lucide-react";
@@ -33,10 +34,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 import ReactDOMServer from "react-dom/server";
-
-const ENABLE_BUS_TOWARD_PICKUP_TEST = true;
-const SIMULATION_STEP_METERS = 60; // Increased for faster movement
-const SIMULATION_INTERVAL_MS = 500; // Reduced from 1000ms for faster updates
+import { TbBusFilled } from "react-icons/tb";
 
 const ParentMapClient = dynamic(() => import("./ParentMapClient"), {
     ssr: false,
@@ -168,10 +166,8 @@ function animateMarker(
 
 const ParentPage = () => {
     const { user, loading: authLoading } = useAuth();
-    // console.log(user)
     const [mapMounted, setMapMounted] = useState(false);
     const [position, setPosition] = useState<BusLocationPayload | null>(null);
-    const [simulatedPosition, setSimulatedPosition] = useState<BusLocationPayload | null>(null);
     const [locationLoading, setLocationLoading] = useState(true);
     const [now, setNow] = useState<number | null>(null);
     const [currentDistanceMeters, setCurrentDistanceMeters] = useState<number | null>(null);
@@ -205,14 +201,12 @@ const ParentPage = () => {
     const hasRecenteredOnTripStartRef = useRef(false);
     const hasRecenteredOnInitialLoadRef = useRef(false);
     const busId = user?.busId;
-    const isTripActive = position?.tripActive === true;
-    const hasLocation = typeof position?.lat === "number" && typeof position?.lng === "number";
     const pickupLocation = user?.pickupLocation;
     const pickupCoordinates =
         typeof pickupLocation?.lat === "number" && typeof pickupLocation?.lng === "number"
             ? { lat: pickupLocation.lat, lng: pickupLocation.lng }
             : null;
-    const displayPosition = ENABLE_BUS_TOWARD_PICKUP_TEST ? simulatedPosition ?? position : position;
+    const displayPosition = position;
     const displayHasLocation =
         typeof displayPosition?.lat === "number" && typeof displayPosition?.lng === "number";
     const displayIsTripActive = displayPosition?.tripActive === true;
@@ -222,6 +216,8 @@ const ParentPage = () => {
     const studentAvatar = useMemo(() => getInitials(studentName), [studentName]);
     const studentPhotoUrl = user?.photoURL ?? (user as any)?.photo ?? null;
     const studentEmail = user?.email ?? null;
+    const schoolName = user?.schoolName?.trim?.() ? user.schoolName : "School";
+
 
     const assignedBusLabel = useMemo(() => {
         if (busId === null || busId === undefined || String(busId).trim().length === 0) return "Not assigned";
@@ -258,7 +254,7 @@ const ParentPage = () => {
     useEffect(() => {
         import("leaflet").then((L) => {
             const svgString = ReactDOMServer.renderToString(
-                <BusFrontIcon size={26} />
+                <TbBusFilled size={26} />
 
             );
             const divIcon = L.divIcon({
@@ -275,7 +271,6 @@ const ParentPage = () => {
         if (!busId) {
             setLocationLoading(false);
             setPosition(null);
-            setSimulatedPosition(null);
             setTripStartedAt(null);
             return;
         }
@@ -300,9 +295,6 @@ const ParentPage = () => {
                 setTripStartedAt(null);
             }
 
-
-            // -----------  ADD FIREBASE MESSAGING NOTIFICATION HERE FOR BUS START/STOP  --------------
-
             if (prevActive !== null && prevActive !== nextActive) {
                 if (nextActive) {
                     toast.success("Driver started trip. Live tracking is active.");
@@ -316,11 +308,6 @@ const ParentPage = () => {
 
         return () => unsubscribe();
     }, [busId]);
-
-    function formatTime(value: Date | null) {
-        if (!value) return "--";
-        return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    }
 
     useEffect(() => {
         let cancelled = false;
@@ -368,66 +355,13 @@ const ParentPage = () => {
     useEffect(() => {
         hasNearbyToastTriggeredRef.current = false;
         hasRecenteredOnInitialLoadRef.current = false;
-        setSimulatedPosition(null);
         setCurrentDistanceMeters(null);
     }, [user?.uid]);
 
-    useEffect(() => {
-        if (!ENABLE_BUS_TOWARD_PICKUP_TEST) return;
-        if (!pickupCoordinates || !displayIsTripActive) {
-            setSimulatedPosition(null);
-            return;
-        }
-
-        const basePosition = simulatedPosition ?? position;
-        const startPosition =
-            basePosition && typeof basePosition.lat === "number" && typeof basePosition.lng === "number"
-                ? basePosition
-                : {
-                    lat: pickupCoordinates.lat + 0.01,
-                    lng: pickupCoordinates.lng + 0.01,
-                    tripActive: true,
-                    accuracy: 10,
-                    timestamp: Date.now(),
-                };
-
-        const interval = window.setInterval(() => {
-            setSimulatedPosition((current) => {
-                const source =
-                    current && typeof current.lat === "number" && typeof current.lng === "number"
-                        ? current
-                        : startPosition;
-
-                const currentDistance = haversineDistanceMeters(
-                    { lat: source.lat, lng: source.lng },
-                    pickupCoordinates
-                );
-
-                if (currentDistance <= 20) {
-                    return {
-                        ...source,
-                        lat: pickupCoordinates.lat,
-                        lng: pickupCoordinates.lng,
-                        timestamp: Date.now(),
-                    };
-                }
-
-                const moveRatio = Math.min(1, SIMULATION_STEP_METERS / Math.max(currentDistance, 1));
-                const nextLat = source.lat + (pickupCoordinates.lat - source.lat) * moveRatio;
-                const nextLng = source.lng + (pickupCoordinates.lng - source.lng) * moveRatio;
-
-                return {
-                    ...source,
-                    lat: nextLat,
-                    lng: nextLng,
-                    tripActive: true,
-                    timestamp: Date.now(),
-                };
-            });
-        }, SIMULATION_INTERVAL_MS);
-
-        return () => window.clearInterval(interval);
-    }, [displayIsTripActive, pickupCoordinates]);
+    function formatTime(value: Date | null) {
+        if (!value) return "--";
+        return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
 
     useEffect(() => {
         if (!displayPosition || !displayIsTripActive || !markerRef.current) return;
@@ -577,7 +511,6 @@ const ParentPage = () => {
                     </div>
                     <div>
                         <p className="text-base  font-bold text-gray-900 leading-none">Smart Yatra</p>
-                        {/* <p className="mt-0.5 text-[10px] text-gray-500">Parent dashboard</p> */}
                     </div>
                 </div>
 
@@ -767,11 +700,18 @@ const ParentPage = () => {
                 {/* LEFT: Map */}
                 <div className="relative flex min-h-[120vw] flex-1 flex-col gap-4 p-4 lg:min-h-0">
                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <MapPin size={12} className="text-blue-600" />
-                        <span className="text-gray-500">Tracking</span>
-                        <ChevronRight size={12} />
-                        <span className="font-semibold text-gray-900">Bus {assignedBusLabel}</span>
+                        <div className="flex items-center gap-1">
+                            <MapPin size={12} className="text-blue-600" />
+                            <span className="text-gray-500">Tracking</span>
+                            <ChevronRight size={12} />
+                            <span className="font-semibold text-gray-900">Bus {assignedBusLabel}</span>
+                        </div>
+                        <div className="ml-auto flex items-center gap-1.5">
+                            <School size={12} className="text-blue-600" />
+                            <span className="font-semibold text-gray-900">{schoolName || "School"}</span>
+                        </div>
                     </div>
+
 
                     <CardShell className="group relative z-0 h-full flex-1 overflow-hidden rounded-3xl!">
                         {mapMounted ? (

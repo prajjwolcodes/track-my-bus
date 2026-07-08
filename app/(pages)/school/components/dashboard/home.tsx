@@ -62,7 +62,7 @@ export default function DashboardHome() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           {
             label: "Total Buses",
@@ -85,13 +85,6 @@ export default function DashboardHome() {
             text: "text-indigo-900",
             sub: "text-indigo-600",
           },
-          {
-            label: "Active Routes",
-            val: buses.filter((b) => b.routeNo).length,
-            bg: "bg-rose-50",
-            text: "text-rose-900",
-            sub: "text-rose-600",
-          },
         ].map((stat, i) => (
           <div
             key={i}
@@ -112,7 +105,7 @@ export default function DashboardHome() {
         ))}
       </section>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           {
             label: "Add Bus",
@@ -140,13 +133,6 @@ export default function DashboardHome() {
             action: () => setOpenAssign(true),
             color:
               "bg-violet-50 text-violet-700 border-violet-100 hover:bg-violet-100",
-          },
-          {
-            label: "Add Route",
-            icon: Route,
-            action: () => setOpenRoute(true),
-            color:
-              "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100",
           },
           {
             label: "Live Map",
@@ -257,13 +243,7 @@ export default function DashboardHome() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
 
-                      <span className="text-[10px] font-bold uppercase">
-                        Moving
-                      </span>
-                    </div>
                   </div>
 
                   {/* Info */}

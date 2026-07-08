@@ -7,7 +7,7 @@ import { getMessaging, onMessage } from "firebase/messaging";
 import { firebaseApp, db } from "@/firebase/firebase";
 import { AuthProvider, useAuth } from "./context/authContext";
 import { generateToken } from "@/firebase/firebase-messaging";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import NotificationCard, { InAppNotification, NOTIFICATION_AUTO_DISMISS_MS } from "@/components/NotificationCard";
 
 function FcmTokenRegistrar() {
@@ -60,8 +60,11 @@ function FcmTokenRegistrar() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
     const [notifications, setNotifications] = useState<InAppNotification[]>([]);
     const lastSoundAtRef = useRef(0);
+    const seenBusNotificationIdsRef = useRef<Set<string>>(new Set());
+    const busNotificationsReadyRef = useRef(false);
 
     function playAlertSound() {
         if (typeof window === "undefined") return;
@@ -223,6 +226,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
 
     useEffect(() => {
+        seenBusNotificationIdsRef.current = new Set();
+        busNotificationsReadyRef.current = false;
+    }, []);
+
+    useEffect(() => {
         console.log("[App-Messaging] Setting up foreground message handler...");
         const messaging = getMessaging(firebaseApp);
         const unsubscribeForeground = onMessage(messaging, (payload) => {
@@ -260,6 +268,44 @@ export function Providers({ children }: { children: React.ReactNode }) {
             navigator.serviceWorker.removeEventListener("message", handleMessage);
         };
     }, []);
+
+    useEffect(() => {
+        if (!user || user.role !== "parent" || !user.busId) return;
+
+        seenBusNotificationIdsRef.current = new Set();
+        busNotificationsReadyRef.current = false;
+
+        const notificationsQuery = query(
+            collection(db, "busNotifications"),
+            where("busId", "==", user.busId)
+        );
+
+        const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+            const shouldSkipInitial = !busNotificationsReadyRef.current;
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type !== "added") return;
+
+                const notificationId = change.doc.id;
+                if (seenBusNotificationIdsRef.current.has(notificationId)) return;
+                seenBusNotificationIdsRef.current.add(notificationId);
+
+                if (shouldSkipInitial) return;
+
+                const data = change.doc.data() as { title?: string; body?: string; icon?: string | null };
+                const title = data.title || "Bus Update";
+                const body = data.body || "New update received";
+                const icon = data.icon ?? null;
+
+                pushNotification({ title, body, icon });
+                void showSystemNotification({ title, body, icon });
+            });
+
+            busNotificationsReadyRef.current = true;
+        });
+
+        return () => unsubscribe();
+    }, [user?.busId, user?.role]);
 
     return (
         <AuthProvider>
