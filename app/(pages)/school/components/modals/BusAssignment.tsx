@@ -246,23 +246,13 @@ const BusAssignment = ({ onClose }: Props) => {
             >
               <option value="" className={`${nunito.className}`}>
                 Choose driver
-                </option>
+              </option>
               {drivers.filter(d => !d.busId).map((d) => (
                 <option key={d.driverId} value={d.driverId}>
                   {d.name}
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Route */}
-          <div>
-            <label className={`${libreBaskerville.className} text-sm font-semibold text-slate-700`}>Route No</label>
-            <input
-              value={routeNo}
-              onChange={(e) => setRouteNo(e.target.value)}
-              className="w-full mt-2 border border-slate-300 rounded-xl p-3 focus:ring-4 focus:ring-violet-100"
-            />
           </div>
 
           {error && (
