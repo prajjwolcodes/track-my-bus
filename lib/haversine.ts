@@ -24,3 +24,5 @@ export function haversineDistanceMeters(from: Coordinate, to: Coordinate): numbe
 
     return EARTH_RADIUS_METERS * c;
 }
+
+

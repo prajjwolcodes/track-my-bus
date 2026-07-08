@@ -434,21 +434,6 @@ const ParentPage = () => {
         }
     }, [displayPosition, displayHasLocation, displayIsTripActive, pickupCoordinates, user?.role]);
 
-    const getLastUpdatedLabel = (timestamp: number) => {
-        if (now === null) return "—";
-        const diffMs = Math.max(0, now - timestamp);
-        const diffSec = Math.floor(diffMs / 1000);
-
-        if (diffSec < 5) return "just now";
-        if (diffSec < 60) return `${diffSec}s ago`;
-
-        const diffMin = Math.floor(diffSec / 60);
-        if (diffMin < 60) return `${diffMin}m ago`;
-
-        const diffHr = Math.floor(diffMin / 60);
-        return `${diffHr}h ago`;
-    };
-
     function recenterMap() {
         if (!mapRef.current || !displayHasLocation) return;
 

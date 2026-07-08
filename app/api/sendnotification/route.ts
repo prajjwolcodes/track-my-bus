@@ -48,9 +48,6 @@ export async function POST(request: Request) {
 
 
         const uniqueTokens = Array.from(new Set(tokens));
-        console.log(uniqueTokens)
-        // const uniqueTokens = ["dqlKh5UkxcSNyQLAHlpKVA:APA91bHnt1XxDbYZppznL46La1P_-emv5y7-uYB3Wd5OYII_WQzsGmiABGJIqNrik0Uthu1JN_vS0CLD5ORZs80bw2DRDHlBJEC47f9fzv29Gw7H4KC_icw"];
-
 
         if (!uniqueTokens.length) {
             await adminDb.collection("busNotifications").add({
