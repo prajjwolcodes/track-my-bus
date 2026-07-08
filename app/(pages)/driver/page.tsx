@@ -102,6 +102,9 @@ const DEFAULT_PICKUP_PASS_RADIUS_METERS = 80;
 const MAX_PICKUP_PASS_RADIUS_METERS = 200;
 const DEFAULT_SIMULATION_BASE: Coordinate = { lat: 27.7172, lng: 85.324 };
 const SIMULATION_STEP_DURATION_MS = 13000;
+function simulationBaseStorageKey(busId: string | number) {
+    return `driver-simulation-base:${busId}`;
+}
 
 function clampNumber(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, value));
@@ -386,6 +389,39 @@ const DriverPage = () => {
         };
     }, [busId]);
 
+    useEffect(() => {
+        if (!busId || started || simulationActiveRef.current) return;
+
+        try {
+            const stored = window.sessionStorage.getItem(simulationBaseStorageKey(busId));
+            if (!stored) return;
+
+            const parsed = JSON.parse(stored) as Coordinate | null;
+            const lat = typeof parsed?.lat === "number" ? parsed.lat : null;
+            const lng = typeof parsed?.lng === "number" ? parsed.lng : null;
+
+            if (lat === null || lng === null) return;
+
+            const restored = {
+                lat,
+                lng,
+                accuracy: 8,
+                timestamp: Date.now(),
+            };
+
+            setPosition(restored);
+            setDisplayPosition(restored);
+            void updateBusLocation(busId, {
+                ...restored,
+                tripActive: false,
+            });
+
+            window.sessionStorage.removeItem(simulationBaseStorageKey(busId));
+        } catch {
+            // ignore invalid restore payloads
+        }
+    }, [busId, started]);
+
     const beginLocationWatch = useCallback(() => {
         if (!busId || watchIdRef.current !== null) return;
 
@@ -504,6 +540,13 @@ const DriverPage = () => {
         };
 
         try {
+            if (busId) {
+                window.sessionStorage.setItem(
+                    simulationBaseStorageKey(busId),
+                    JSON.stringify(displayPositionRef.current ?? position ?? DEFAULT_SIMULATION_BASE)
+                );
+            }
+
             await setBusTripActive(busId, true);
 
             const currentSnapshot = await get(ref(realTimeDB, `location/bus/${busId}`));
@@ -520,7 +563,7 @@ const DriverPage = () => {
                     : fallbackBase;
 
             const routeStops = studentPickupMarkers.map((student) => student.pickupLocation);
-            const travelPath = [...routeStops, basePosition];
+            const travelPath = [...routeStops];
             let currentPoint = basePosition;
 
             await syncBusLocation(currentPoint);
@@ -704,7 +747,7 @@ const DriverPage = () => {
     }, [displayPosition]);
 
     useEffect(() => {
-        if (!position || !started) return;
+        if (!position || !started || simulationActiveRef.current) return;
 
         // Avoid re-render loops / excessive updates: only update when the GPS payload changes.
         setDisplayPosition((prev) => {
@@ -966,7 +1009,7 @@ const DriverPage = () => {
                     </CardShell>
                 </div>
 
-                <div className="w-full lg:w-[300px] xl:w-[400px] flex-shrink-0 flex flex-col sm:mt-8 gap-3 p-4 pt-0 lg:pt-4 lg:pl-0 overflow-y-auto">
+                <div className="w-full lg:w-75 xl:w-100 shrink-0 flex flex-col sm:mt-8 gap-3 p-4 pt-0 lg:pt-4 lg:pl-0 overflow-y-auto">
                     {/* 1. Trip Control */}
                     <CardShell className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
                         {/* Header */}

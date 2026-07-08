@@ -330,24 +330,9 @@ export default function DashboardHome() {
 
             {[
               {
-                text: "New driver added to system",
+                text: "School admin added to system",
                 time: "2m ago",
                 color: "bg-emerald-500",
-              },
-              {
-                text: "Bus 102 route updated",
-                time: "1h ago",
-                color: "bg-blue-500",
-              },
-              {
-                text: "Maintenance alert: Bus 05",
-                time: "3h ago",
-                color: "bg-rose-500",
-              },
-              {
-                text: "Student registration verified",
-                time: "5h ago",
-                color: "bg-violet-500",
               },
             ].map((log, i) => (
               <div key={i} className="flex gap-4 relative z-10">
